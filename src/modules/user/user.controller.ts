@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { AppError } from "../../utils/AppError.js";
+import { maskFields, maskItem } from "../../utils/mask.js";
 import { userService } from "./user.service.js";
 import { ListBannedUsersQuery, ListUsersQuery } from "./user.validator.js";
 
@@ -79,9 +80,14 @@ export const getProfileOverviewController: RequestHandler = async (
 export const getUsersController: RequestHandler = async (req, res) => {
   const result = await userService.getUsers(req.query as ListUsersQuery);
 
+  const maskedItems = maskFields(result.items, ["email", "phone"]);
+
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      ...result,
+      items: maskedItems,
+    },
   });
 };
 
@@ -89,9 +95,11 @@ export const getUserByIdController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
   const user = await userService.getUserById(id);
 
+  const maskedUser = maskItem(user, ["email", "phone"]);
+
   return res.status(200).json({
     status: "success",
-    data: { user },
+    data: { user: maskedUser },
   });
 };
 
@@ -100,9 +108,14 @@ export const getBannedUsersController: RequestHandler = async (req, res) => {
     req.query as ListBannedUsersQuery,
   );
 
+  const maskedItems = maskFields(result.items, ["email"]);
+
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      ...result,
+      items: maskedItems,
+    },
   });
 };
 

@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { maskFields, maskItem } from "../../utils/mask.js";
 import { orderService } from "./order.service.js";
 import { ListAdminOrdersQuery, ListOrdersQuery } from "./order.validator.js";
 
@@ -108,19 +109,25 @@ export const getAdminOrdersController: RequestHandler = async (req, res) => {
     req.query as ListAdminOrdersQuery,
   );
 
+  const maskedItems = maskFields(result.items, ["user.email"]);
+
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      ...result,
+      items: maskedItems,
+    },
   });
 };
 
 export const getAdminOrderController: RequestHandler = async (req, res) => {
   const orderId = req.params.id as string;
-
   const order = await orderService.getAdminOrder(orderId);
+
+  const maskedOrder = maskItem(order, ["user.email"]);
 
   return res.status(200).json({
     status: "success",
-    data: { order },
+    data: { order: maskedOrder },
   });
 };

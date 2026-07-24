@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { maskFields } from "../../utils/mask.js";
 import { walletService } from "./wallet.service.js";
 import {
   ListAdminTransactionsQuery,
@@ -67,6 +68,7 @@ export const verifyPaymentController: RequestHandler = async (req, res) => {
 
   return res.redirect(`${FRONTEND_URL}/payment/failed?${params.toString()}`);
 };
+
 export const getUserTransactionsController: RequestHandler = async (
   req,
   res,
@@ -89,9 +91,14 @@ export const getAllWalletsController: RequestHandler = async (req, res) => {
     req.query as ListWalletsAdminQuery,
   );
 
+  const maskedItems = maskFields(result.items, ["user.email", "user.phone"]);
+
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      ...result,
+      items: maskedItems,
+    },
   });
 };
 
@@ -103,8 +110,13 @@ export const getAllTransactionsController: RequestHandler = async (
     req.query as ListAdminTransactionsQuery,
   );
 
+  const maskedItems = maskFields(result.items, ["user.email"]);
+
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      ...result,
+      items: maskedItems,
+    },
   });
 };

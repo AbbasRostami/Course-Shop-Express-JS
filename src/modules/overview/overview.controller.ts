@@ -1,11 +1,23 @@
 import { RequestHandler } from "express";
+import { maskFields } from "../../utils/mask.js";
 import { overviewService } from "./overview.service.js";
 
 export const getAdminOverviewController: RequestHandler = async (_req, res) => {
   const overview = await overviewService.getAdminOverview();
+
+  const maskedLatestPending = maskFields(overview.comment.latestPending, [
+    "user.email",
+  ]);
+
   return res.status(200).json({
     status: "success",
-    data: overview,
+    data: {
+      ...overview,
+      comment: {
+        ...overview.comment,
+        latestPending: maskedLatestPending,
+      },
+    },
   });
 };
 
@@ -69,9 +81,17 @@ export const getAdminCommentStatsController: RequestHandler = async (
   res,
 ) => {
   const stats = await overviewService.getAdminCommentStats();
+
+  const maskedLatestPending = maskFields(stats.latestPending, ["user.email"]);
+
   return res.status(200).json({
     status: "success",
-    data: { comment: stats },
+    data: {
+      comment: {
+        ...stats,
+        latestPending: maskedLatestPending,
+      },
+    },
   });
 };
 
