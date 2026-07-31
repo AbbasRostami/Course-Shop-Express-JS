@@ -1,5 +1,6 @@
 import sanitizeHtml from "sanitize-html";
 
+// [UTIL] Sanitize rich text HTML
 export const sanitizeRichText = (html: string): string => {
   return sanitizeHtml(html, {
     allowedTags: [
@@ -54,6 +55,7 @@ export const sanitizeRichText = (html: string): string => {
         "font-size": [/.*/],
       },
     },
+    // [UTIL] Force safe link attributes
     transformTags: {
       a: sanitizeHtml.simpleTransform("a", {
         rel: "noopener noreferrer nofollow",

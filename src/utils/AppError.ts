@@ -1,3 +1,4 @@
+// [ERROR] Custom operational error class
 export class AppError extends Error {
   statusCode: number;
   status: "fail" | "error";

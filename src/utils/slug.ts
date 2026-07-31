@@ -1,3 +1,4 @@
+// [UTIL] Generate URL-safe slug
 export const createSlug = (text: string): string => {
   const slug = text
     .trim()
@@ -7,6 +8,7 @@ export const createSlug = (text: string): string => {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+  // [FALLBACK] Empty result
   if (!slug) {
     return `item-${Date.now()}`;
   }

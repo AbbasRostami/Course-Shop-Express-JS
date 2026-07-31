@@ -9,6 +9,7 @@ export interface ReactionState extends ReactionCounts {
   myReaction: "LIKE" | "DISLIKE" | null;
 }
 
+// [DB] Get like/dislike counts for single target
 export const getReactionCounts = async (
   field: "courseId" | "commentId" | "postId",
   targetId: string,
@@ -25,6 +26,7 @@ export const getReactionCounts = async (
   return { likes, dislikes };
 };
 
+// [DB] Get current user's reaction for single target
 export const getMyReaction = async (
   field: "courseId" | "commentId" | "postId",
   targetId: string,
@@ -40,6 +42,7 @@ export const getMyReaction = async (
   return (reaction?.type as "LIKE" | "DISLIKE") ?? null;
 };
 
+// [DB] Get reaction counts + user reaction for a list
 export const getReactionCountsForList = async (
   field: "courseId" | "commentId" | "postId",
   targetIds: string[],
@@ -49,6 +52,7 @@ export const getReactionCountsForList = async (
     return new Map();
   }
 
+  // [DB] Group counts by target and type
   const counts = await prisma.reaction.groupBy({
     by: [field, "type"],
     where: { [field]: { in: targetIds } },
@@ -57,6 +61,7 @@ export const getReactionCountsForList = async (
 
   const userReactionMap = new Map<string, "LIKE" | "DISLIKE">();
 
+  // [DB] Load user reactions if authenticated
   if (userId) {
     const userReactions = await prisma.reaction.findMany({
       where: {
@@ -77,6 +82,7 @@ export const getReactionCountsForList = async (
     }
   }
 
+  // [LOGIC] Build result map with defaults
   const resultMap = new Map<string, ReactionState>();
 
   for (const id of targetIds) {
@@ -87,6 +93,7 @@ export const getReactionCountsForList = async (
     });
   }
 
+  // [LOGIC] Fill counts
   for (const row of counts) {
     const id = row[field] as string | null;
     if (!id) continue;

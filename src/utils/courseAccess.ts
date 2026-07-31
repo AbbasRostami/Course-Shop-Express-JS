@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 
+// [DB] Check if user is enrolled in course
 export const hasCourseAccess = async (
   userId: string,
   courseId: string,

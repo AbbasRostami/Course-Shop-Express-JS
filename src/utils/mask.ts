@@ -1,10 +1,4 @@
-/*
- * Masking Functions (Pure)
- */
-
-/**
- * maskEmail("ali@gmail.com") => "ali***@gmail.com"
- */
+// [UTIL] Mask email - e.g. ali@gmail.com → ali***@gmail.com
 export const maskEmail = (email: string | null | undefined): string | null => {
   if (!email || typeof email !== "string") return null;
 
@@ -16,10 +10,7 @@ export const maskEmail = (email: string | null | undefined): string | null => {
   return `${localPart.slice(0, 3)}***@${domain}`;
 };
 
-/**
- * maskPhone("09121112233") => "0912****233"
- * maskPhone("02166112233") => "0216****233"
- */
+// [UTIL] Mask phone - e.g. 09121112233 → 0912****233
 export const maskPhone = (phone: string | null | undefined): string | null => {
   if (!phone || typeof phone !== "string") return null;
   if (phone.length < 8) return phone;
@@ -32,14 +23,16 @@ export const maskPhone = (phone: string | null | undefined): string | null => {
 type MaskType = "email" | "phone" | "auto";
 
 interface MaskOptions {
-  fields: string[]; // ["email", "user.phone", "customer.email"]
-  type?: MaskType; // "email" | "phone" | "auto"
+  fields: string[];
+  type?: MaskType;
 }
 
+// [UTIL] Get nested object value by dot path
 const getNestedValue = (obj: any, path: string): any => {
   return path.split(".").reduce((current, key) => current?.[key], obj);
 };
 
+// [UTIL] Set nested object value by dot path
 const setNestedValue = (obj: any, path: string, value: any): any => {
   const keys = path.split(".");
   const newObj = { ...obj };
@@ -55,6 +48,7 @@ const setNestedValue = (obj: any, path: string, value: any): any => {
   return newObj;
 };
 
+// [UTIL] Auto-detect field mask type
 const detectMaskType = (fieldName: string, value: string): MaskType => {
   const lowerField = fieldName.toLowerCase();
 
@@ -64,16 +58,7 @@ const detectMaskType = (fieldName: string, value: string): MaskType => {
   return "auto";
 };
 
-/**
- * // Simple
- * maskFields(users, { fields: ["email", "phone"] })
- *
- * // Nested
- * maskFields(orders, { fields: ["user.email", "user.phone"] })
- *
- * // Type
- *  * maskFields(users, { fields: ["email"], type: "email" })
- */
+// [UTIL] Mask fields on array of items
 export function maskFields<T>(
   items: T[],
   options: MaskOptions | string[],
@@ -113,7 +98,7 @@ export function maskFields<T>(
   });
 }
 
-// Single Item Mask
+// [UTIL] Mask fields on single item
 export function maskItem<T>(item: T, options: MaskOptions | string[]): T {
   return maskFields([item], options)[0];
 }
