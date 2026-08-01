@@ -1,3 +1,4 @@
+// [TEST] Mock nodemailer
 import { vi } from "vitest";
 
 vi.mock("nodemailer", () => ({
@@ -13,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import app from "../app.js";
 import { prisma } from "../lib/prisma.js";
 
+// [TEST] Test user credentials
 const TEST_USER = {
   email: "integration-test@example.com",
   password: "Test123456",
@@ -24,12 +26,14 @@ let refreshTokenCookie: string;
 let verificationCode: string;
 
 describe("🔐 Auth Integration Flow: register → verify → login → protected → refresh", () => {
+  // [DB] Cleanup before tests
   beforeAll(async () => {
     await prisma.user.deleteMany({
       where: { email: TEST_USER.email },
     });
   });
 
+  // [DB] Cleanup after tests
   afterAll(async () => {
     await prisma.user.deleteMany({
       where: { email: TEST_USER.email },
@@ -47,6 +51,7 @@ describe("🔐 Auth Integration Flow: register → verify → login → protecte
       expect(res.body.status).toBe("success");
       expect(res.body.data.email).toBe(TEST_USER.email);
 
+      // [DB] Verify user created with unverified state
       const user = await prisma.user.findUnique({
         where: { email: TEST_USER.email },
       });
@@ -83,6 +88,8 @@ describe("🔐 Auth Integration Flow: register → verify → login → protecte
         .expect(200);
 
       expect(res.body.status).toBe("success");
+
+      // [AUTH] Check access token in response and cookie
       expect(res.body.data.accessToken).toBeDefined();
 
       const cookies = res.headers["set-cookie"] as unknown as string[];
@@ -106,6 +113,8 @@ describe("🔐 Auth Integration Flow: register → verify → login → protecte
         .expect(200);
 
       expect(res.body.status).toBe("success");
+
+      // [AUTH] Store tokens for next steps
       accessToken = res.body.data.accessToken;
 
       const cookies = res.headers["set-cookie"] as unknown as string[];
@@ -150,6 +159,8 @@ describe("🔐 Auth Integration Flow: register → verify → login → protecte
         .expect(200);
 
       expect(res.body.status).toBe("success");
+
+      // [AUTH] Confirm new access token returned
       expect(res.body.data.accessToken).toBeDefined();
     });
   });
@@ -161,6 +172,7 @@ describe("🔐 Auth Integration Flow: register → verify → login → protecte
         .set("Cookie", refreshTokenCookie)
         .expect(200);
 
+      // [AUTH] Confirm refresh token is invalidated
       await request(app)
         .post("/api/auth/refresh")
         .set("Cookie", refreshTokenCookie)

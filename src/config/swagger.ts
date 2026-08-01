@@ -17,6 +17,7 @@ import { uploadSwagger } from "../modules/upload/upload.swagger.js";
 import { userSwagger } from "../modules/user/user.swagger.js";
 import { walletSwagger } from "../modules/wallet/wallet.swagger.js";
 
+// [CONFIG] Swagger spec
 export const swaggerSpec = {
   openapi: "3.0.0",
   info: {
@@ -34,6 +35,8 @@ This API supports a dual-authentication mechanism designed to maximize flexibili
 
 *Note: Protected routes will prioritize checking incoming cookies, fallback to the Bearer header if absent.*`,
   },
+
+  // [CONFIG] API servers
   servers: [
     {
       url: "http://localhost:3000",
@@ -44,6 +47,8 @@ This API supports a dual-authentication mechanism designed to maximize flexibili
       description: "Prodection Server",
     },
   ],
+
+  // [AUTH] Swagger auth schemes
   components: {
     securitySchemes: {
       CookieAuth: {
@@ -63,6 +68,8 @@ This API supports a dual-authentication mechanism designed to maximize flexibili
     },
     schemas: {},
   },
+
+  // [ROUTE] Merge module paths
   paths: {
     ...healthSwagger.paths,
     ...authSwagger.paths,
