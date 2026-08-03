@@ -2,7 +2,9 @@ import type { ErrorRequestHandler } from "express";
 import { AppError } from "../utils/AppError.js";
 import { logger, sendErrorToTelegram } from "./logger.js";
 
+// [MW] Global error handler
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  // [ALERT] Telegram notifier
   const notifyTelegram = (
     statusCode: number,
     message: string,
@@ -20,7 +22,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     }).catch(() => {});
   };
 
-  // AppError
+  // [ERROR] Handle AppError
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {
       logger.error("💥 Server Error", {
@@ -46,7 +48,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     });
   }
 
-  // Unexpected Errors
+  // [ERROR] Handle unexpected errors
   logger.error("💥 Unexpected Error", {
     message: err.message,
     stack: err.stack,

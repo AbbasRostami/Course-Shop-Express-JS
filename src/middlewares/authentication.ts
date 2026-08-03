@@ -4,11 +4,13 @@ import { TokenPayload } from "../modules/auth/auth.types.js";
 import { AppError } from "../utils/AppError.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 
+// [AUTH] Extract bearer token
 function getBearerToken(authHeader?: string): string | null {
   if (!authHeader?.startsWith("Bearer ")) return null;
   return authHeader.split(" ")[1];
 }
 
+// [AUTH] Verify token safely
 function tryVerifyToken(token?: string | null): TokenPayload | null {
   if (!token) return null;
 
@@ -19,6 +21,7 @@ function tryVerifyToken(token?: string | null): TokenPayload | null {
   }
 }
 
+// [MW] User authentication
 export const authentication = async (
   req: Request,
   _res: Response,
@@ -33,6 +36,7 @@ export const authentication = async (
   }
 
   try {
+    // [DB] Load current user
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
@@ -51,6 +55,7 @@ export const authentication = async (
       return next(new AppError("حساب کاربری شما مسدود شده است", 403));
     }
 
+    // [AUTH] Attach user to request
     req.user = {
       id: user.id,
       email: user.email,

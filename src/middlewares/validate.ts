@@ -3,6 +3,7 @@ import { ZodError, ZodSchema } from "zod";
 import { AppError } from "../utils/AppError.js";
 import { removeCloudinaryImage } from "../utils/cloudinary.js";
 
+// [MW] Request validation
 export const validate = (schema: ZodSchema) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
@@ -16,6 +17,7 @@ export const validate = (schema: ZodSchema) => {
         params?: unknown;
       };
 
+      // [LOGIC] Apply parsed values
       if (parsed.body !== undefined) {
         req.body = parsed.body;
       }
@@ -30,10 +32,12 @@ export const validate = (schema: ZodSchema) => {
 
       return next();
     } catch (error) {
+      // [CLEANUP] Remove uploaded file on fail
       if (req.file?.path) {
         await removeCloudinaryImage(req.file.path);
       }
 
+      // [ERROR] Format zod errors
       if (error instanceof ZodError) {
         const formattedErrors: Record<string, string> = {};
 

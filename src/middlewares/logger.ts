@@ -1,8 +1,10 @@
 import fs from "fs";
 import winston from "winston";
 
+// [SETUP] Ensure log directory
 fs.mkdirSync("logs", { recursive: true });
 
+// [UTIL] Send telegram message
 const sendToTelegram = async (message: string) => {
   const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -33,6 +35,7 @@ const sendToTelegram = async (message: string) => {
   }
 };
 
+// [LOG] Winston logger
 export const logger = winston.createLogger({
   level: "info",
   format: winston.format.combine(
@@ -57,6 +60,7 @@ export const logger = winston.createLogger({
   ],
 });
 
+// [UTIL] Parse user agent
 const parseUserAgent = (ua: string = "") => {
   const lower = ua.toLowerCase();
 
@@ -85,6 +89,7 @@ const parseUserAgent = (ua: string = "") => {
   return { browser, os, device };
 };
 
+// [UTIL] Format uptime
 const getUptime = () => {
   const seconds = Math.floor(process.uptime());
   const h = Math.floor(seconds / 3600);
@@ -93,6 +98,7 @@ const getUptime = () => {
   return `${h}h ${m}m ${s}s`;
 };
 
+// [UTIL] Escape HTML
 const escapeHtml = (text: string) => {
   return text
     .replace(/&/g, "&amp;")
@@ -100,6 +106,7 @@ const escapeHtml = (text: string) => {
     .replace(/>/g, "&gt;");
 };
 
+// [UTIL] Format Tehran time
 const formatTime = () => {
   const now = new Date();
   const date = now.toLocaleDateString("en-GB", {
@@ -118,6 +125,7 @@ const formatTime = () => {
   return `${date} - ${time}`;
 };
 
+// [CONST] HTTP method icons
 const METHOD_ICONS: Record<string, string> = {
   GET: "🔵",
   POST: "🟢",
@@ -126,6 +134,7 @@ const METHOD_ICONS: Record<string, string> = {
   DELETE: "🔴",
 };
 
+// [ALERT] Send error report
 export const sendErrorToTelegram = async (params: {
   statusCode: number;
   method: string;

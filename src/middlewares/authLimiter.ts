@@ -1,18 +1,22 @@
 import type { Request } from "express";
 import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 
+// [UTIL] Normalize IP
 const getIp = (req: Request) => ipKeyGenerator(req.ip ?? "unknown");
 
+// [UTIL] Normalize email
 const getEmail = (req: Request) => {
   const email = req.body?.email;
   return typeof email === "string" ? email.trim().toLowerCase() : undefined;
 };
 
+// [UTIL] Fail response
 const jsonMessage = (message: string) => ({
   status: "fail",
   data: { message },
 });
 
+// [RATE] Login attempts
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
@@ -29,6 +33,7 @@ export const loginLimiter = rateLimit({
   ),
 });
 
+// [RATE] Register by IP
 export const registerIpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 20,
@@ -40,6 +45,7 @@ export const registerIpLimiter = rateLimit({
   ),
 });
 
+// [RATE] Register by email
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 5,
@@ -55,6 +61,7 @@ export const registerLimiter = rateLimit({
   ),
 });
 
+// [RATE] Forgot password
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 3,
@@ -70,6 +77,7 @@ export const forgotPasswordLimiter = rateLimit({
   ),
 });
 
+// [RATE] Reset password
 export const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
@@ -85,6 +93,7 @@ export const resetPasswordLimiter = rateLimit({
   ),
 });
 
+// [RATE] Resend verify code
 export const resendVerificationLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   limit: 3,
@@ -100,6 +109,7 @@ export const resendVerificationLimiter = rateLimit({
   ),
 });
 
+// [RATE] Resend reset code
 export const resendResetCodeLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   limit: 3,
@@ -115,6 +125,7 @@ export const resendResetCodeLimiter = rateLimit({
   ),
 });
 
+// [RATE] Change email
 export const changeEmailLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 3,
@@ -134,6 +145,7 @@ export const changeEmailLimiter = rateLimit({
   ),
 });
 
+// [RATE] Resend change-email code
 export const resendChangeEmailCodeLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   limit: 3,
