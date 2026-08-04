@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// [VALID] Enroll by course slug schema
 export const enrollSchema = z.object({
   params: z.object({
     slug: z
@@ -9,6 +10,7 @@ export const enrollSchema = z.object({
   }),
 });
 
+// [VALID] List my courses schema
 export const listMyCoursesSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),

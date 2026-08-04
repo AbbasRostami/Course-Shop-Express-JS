@@ -2,10 +2,8 @@ import { RequestHandler } from "express";
 import { favoriteService } from "./favorite.service.js";
 import { ListFavoritesQuery } from "./favorite.validator.js";
 
-export const toggleCourseFavoriteController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [POST] Toggle course favorite
+export const toggleCourseFavoriteController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const courseId = req.params.courseId as string;
 
@@ -17,10 +15,8 @@ export const toggleCourseFavoriteController: RequestHandler = async (
   });
 };
 
-export const getMyCourseFavoritesController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [GET] Get my course favorites
+export const getMyCourseFavoritesController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
   const result = await favoriteService.getMyCourseFavorites(
@@ -34,12 +30,10 @@ export const getMyCourseFavoritesController: RequestHandler = async (
   });
 };
 
-export const togglePostFavoriteController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [POST] Toggle post favorite
+export const togglePostFavoriteController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
-  const postId = req.params.postId as string; // ← as string اضافه شد
+  const postId = req.params.postId as string;
 
   const result = await favoriteService.togglePostFavorite(userId, postId);
 
@@ -49,10 +43,8 @@ export const togglePostFavoriteController: RequestHandler = async (
   });
 };
 
-export const getMyPostFavoritesController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [GET] Get my post favorites
+export const getMyPostFavoritesController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
   const result = await favoriteService.getMyPostFavorites(

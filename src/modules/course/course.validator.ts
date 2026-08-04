@@ -1,16 +1,18 @@
 import { z } from "zod";
 
+// [VALID] Course level enum
 const courseLevelEnum = z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"], {
-  error:
-    "سطح دوره باید یکی از موارد زیر باشد: BEGINNER, INTERMEDIATE, ADVANCED",
+  error: "سطح دوره باید یکی از موارد زیر باشد: BEGINNER, INTERMEDIATE, ADVANCED",
 });
 
+// [VALID] Coerce price to integer
 const coerceNumber = z.coerce
   .number({ error: "قیمت باید عدد باشد" })
   .int("قیمت باید عدد صحیح باشد")
   .min(0, "قیمت نمی‌تواند منفی باشد")
   .max(1000000000, "قیمت بیش از حد بزرگ است");
 
+// [VALID] Coerce string "true"/"false" to boolean
 const coerceBoolean = z.preprocess(
   (val) => {
     if (val === "true" || val === true) return true;
@@ -20,6 +22,7 @@ const coerceBoolean = z.preprocess(
   z.boolean({ error: "وضعیت انتشار باید boolean باشد" }),
 );
 
+// [VALID] Normalize category slugs to array
 const categoriesSchema = z
   .union([z.string(), z.array(z.string())])
   .optional()
@@ -28,6 +31,7 @@ const categoriesSchema = z
     return Array.isArray(val) ? val : [val];
   });
 
+// [VALID] Create course schema
 export const createCourseSchema = z.object({
   body: z.object({
     title: z
@@ -52,6 +56,7 @@ export const createCourseSchema = z.object({
   }),
 });
 
+// [VALID] Update course schema
 export const updateCourseSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
@@ -76,12 +81,14 @@ export const updateCourseSchema = z.object({
   }),
 });
 
+// [VALID] Delete course schema
 export const deleteCourseSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
   }),
 });
 
+// [VALID] Toggle publish schema
 export const togglePublishSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
@@ -91,12 +98,14 @@ export const togglePublishSchema = z.object({
   }),
 });
 
+// [VALID] Get course by slug schema
 export const getCourseBySlugSchema = z.object({
   params: z.object({
     slug: z.string().min(1, "slug الزامی است").max(200),
   }),
 });
 
+// [VALID] Public list courses schema
 export const listCoursesPublicSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
@@ -111,6 +120,7 @@ export const listCoursesPublicSchema = z.object({
   }),
 });
 
+// [VALID] Admin list courses schema
 export const listCoursesAdminSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
@@ -127,9 +137,5 @@ export const listCoursesAdminSchema = z.object({
 export type CreateCourseInput = z.infer<typeof createCourseSchema>["body"];
 export type UpdateCourseInput = z.infer<typeof updateCourseSchema>["body"];
 export type TogglePublishInput = z.infer<typeof togglePublishSchema>["body"];
-export type ListCoursesPublicQuery = z.infer<
-  typeof listCoursesPublicSchema
->["query"];
-export type ListCoursesAdminQuery = z.infer<
-  typeof listCoursesAdminSchema
->["query"];
+export type ListCoursesPublicQuery = z.infer<typeof listCoursesPublicSchema>["query"];
+export type ListCoursesAdminQuery = z.infer<typeof listCoursesAdminSchema>["query"];

@@ -10,6 +10,7 @@ import {
 } from "./enrollment.types.js";
 import { ListMyCoursesQuery } from "./enrollment.validator.js";
 
+// [UTIL] Format enrollment for response
 const formatEnrollment = (item: EnrollmentWithRelations) => {
   const { _count, ...courseRest } = item.course;
   return {
@@ -24,6 +25,7 @@ const formatEnrollment = (item: EnrollmentWithRelations) => {
 };
 
 export const enrollmentService = {
+  // [DB] Enroll user in free course
   async enroll(userId: string, slug: string) {
     const course = await prisma.course.findFirst({
       where: {
@@ -37,12 +39,10 @@ export const enrollmentService = {
       throw new AppError("دوره مورد نظر یافت نشد", 404);
     }
 
+    // [DB] Check for existing enrollment
     const existingEnrollment = await prisma.enrollment.findUnique({
       where: {
-        userId_courseId: {
-          userId,
-          courseId: course.id,
-        },
+        userId_courseId: { userId, courseId: course.id },
       },
     });
 
@@ -50,6 +50,7 @@ export const enrollmentService = {
       throw new AppError("شما قبلاً در این دوره ثبت‌نام کرده‌اید", 400);
     }
 
+    // [LOGIC] Block direct enrollment for paid courses
     if (course.price > 0) {
       throw new AppError(
         "برای خرید دوره‌های پولی از سبد خرید استفاده کنید",
@@ -57,6 +58,7 @@ export const enrollmentService = {
       );
     }
 
+    // [DB] Create free enrollment
     const enrollment = await prisma.enrollment.create({
       data: {
         userId,
@@ -82,6 +84,7 @@ export const enrollmentService = {
     };
   },
 
+  // [DB] Get user's enrolled courses with pagination
   async getMyEnrollments(userId: string, query: ListMyCoursesQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -96,10 +99,8 @@ export const enrollmentService = {
       prisma.enrollment.count({ where: { userId } }),
     ]);
 
-    const formattedItems = items.map(formatEnrollment);
-
     return {
-      items: formattedItems,
+      items: items.map(formatEnrollment),
       pagination: buildPaginationMeta(total, page, limit),
     };
   },

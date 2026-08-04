@@ -26,14 +26,18 @@ import {
   VerifyEmailInput,
 } from "./auth.validator.js";
 
+// [CONFIG] OTP expiry duration
 const OTP_EXPIRES_MS = 2 * 60 * 1000;
 
+// [UTIL] Generate 6-digit OTP
 const generateCode = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
+// [UTIL] Get OTP expiry date
 const getOtpExpiresAt = () => new Date(Date.now() + OTP_EXPIRES_MS);
 
 export const authService = {
+  // [AUTH] Register new user or resend OTP
   async register(data: RegisterInput) {
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
@@ -50,6 +54,7 @@ export const authService = {
         throw new AppError("این حساب کاربری مسدود شده است", 403);
       }
 
+      // [LOGIC] Block if previous OTP still valid
       if (
         existingUser.verificationCode &&
         existingUser.verificationExpires &&
@@ -61,6 +66,7 @@ export const authService = {
         });
       }
 
+      // [DB] Update unverified user and resend OTP
       const hashedPassword = await hashPassword(data.password);
       const verificationCode = generateCode();
       const verificationExpires = getOtpExpiresAt();
@@ -101,6 +107,7 @@ export const authService = {
       };
     }
 
+    // [DB] Create new user with wallet
     const hashedPassword = await hashPassword(data.password);
     const verificationCode = generateCode();
     const verificationExpires = getOtpExpiresAt();
@@ -113,9 +120,7 @@ export const authService = {
         verificationCode,
         verificationExpires,
         wallet: {
-          create: {
-            balance: 0,
-          },
+          create: { balance: 0 },
         },
       },
     });
@@ -134,6 +139,7 @@ export const authService = {
       });
     } catch (err) {
       console.error("❌ Error sending verification email:", err);
+      // [CLEANUP] Rollback user on email failure
       await prisma.user.delete({ where: { id: user.id } });
       throw new AppError(
         "ارسال ایمیل تایید ناموفق بود. لطفاً دوباره تلاش کنید.",
@@ -147,6 +153,7 @@ export const authService = {
     };
   },
 
+  // [AUTH] Verify OTP and auto-login
   async verifyEmail(data: VerifyEmailInput): Promise<AuthResponse> {
     const user = await prisma.user.findUnique({ where: { email: data.email } });
 
@@ -173,6 +180,7 @@ export const authService = {
     const accessToken = generateAccessToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id });
 
+    // [DB] Mark user as verified and store refresh token
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -194,6 +202,7 @@ export const authService = {
     };
   },
 
+  // [AUTH] Login with email and password
   async login(data: LoginInput): Promise<AuthResponse> {
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) {
@@ -219,6 +228,7 @@ export const authService = {
     const accessToken = generateAccessToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id });
 
+    // [DB] Store new refresh token
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken },
@@ -231,11 +241,13 @@ export const authService = {
     };
   },
 
+  // [AUTH] Rotate refresh token
   async refresh(token: string) {
     try {
       const decoded = verifyRefreshToken(token) as { id: string };
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
+      // [AUTH] Revoke token if mismatch (token reuse detected)
       if (!user || user.refreshToken !== token) {
         if (user) {
           await prisma.user.update({
@@ -260,6 +272,7 @@ export const authService = {
       });
       const newRefreshToken = generateRefreshToken({ id: user.id });
 
+      // [DB] Store rotated refresh token
       await prisma.user.update({
         where: { id: user.id },
         data: { refreshToken: newRefreshToken },
@@ -275,6 +288,7 @@ export const authService = {
     }
   },
 
+  // [AUTH] Invalidate refresh token on logout
   async logout(token: string) {
     try {
       const decoded = verifyRefreshToken(token) as { id: string };
@@ -285,11 +299,13 @@ export const authService = {
     } catch {}
   },
 
+  // [AUTH] Send password reset OTP
   async forgotPassword(data: ForgotPasswordInput) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
+    // [SECURITY] Generic message to prevent email enumeration
     const genericMessage = {
       message: "اگر این ایمیل در سیستم وجود داشته باشد، کد بازیابی ارسال شد",
     };
@@ -301,6 +317,7 @@ export const authService = {
     const resetCode = generateCode();
     const resetExpires = getOtpExpiresAt();
 
+    // [DB] Store reset code
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -314,6 +331,7 @@ export const authService = {
       resetCode,
     );
 
+    // [EMAIL] Send async, don't block response
     sendEmail({
       to: user.email,
       subject: "🔐 بازیابی رمز عبور",
@@ -324,6 +342,7 @@ export const authService = {
     return genericMessage;
   },
 
+  // [AUTH] Reset password with OTP code
   async resetPassword(data: ResetPasswordInput) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
@@ -336,6 +355,7 @@ export const authService = {
     }
 
     if (user.resetPasswordExpires < new Date()) {
+      // [DB] Clear expired reset code
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -357,6 +377,7 @@ export const authService = {
 
     const hashedPassword = await hashPassword(data.newPassword);
 
+    // [DB] Update password and invalidate all sessions
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -372,11 +393,13 @@ export const authService = {
     };
   },
 
+  // [AUTH] Resend email verification OTP
   async resendVerification(data: ResendVerificationInput) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
+    // [SECURITY] Generic message to prevent email enumeration
     const genericMessage = {
       message: "کد تایید مجدداً به ایمیل ارسال شد",
     };
@@ -388,6 +411,7 @@ export const authService = {
     const verificationCode = generateCode();
     const verificationExpires = getOtpExpiresAt();
 
+    // [DB] Store new OTP
     await prisma.user.update({
       where: { id: user.id },
       data: { verificationCode, verificationExpires },
@@ -398,6 +422,7 @@ export const authService = {
       verificationCode,
     );
 
+    // [EMAIL] Send async, don't block response
     sendEmail({
       to: user.email,
       subject: "🔑 کد تایید حساب کاربری",
@@ -408,11 +433,13 @@ export const authService = {
     return genericMessage;
   },
 
+  // [AUTH] Resend password reset OTP
   async resendResetCode(data: ResendResetCodeInput) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
+    // [SECURITY] Generic message to prevent email enumeration
     const genericMessage = {
       message: "کد تایید مجدداً به ایمیل ارسال شد",
     };
@@ -421,6 +448,7 @@ export const authService = {
       return genericMessage;
     }
 
+    // [LOGIC] Only resend if prior forgot-password request exists
     if (!user.resetPasswordCode) {
       return genericMessage;
     }
@@ -428,6 +456,7 @@ export const authService = {
     const resetCode = generateCode();
     const resetExpires = getOtpExpiresAt();
 
+    // [DB] Store new reset OTP
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -441,6 +470,7 @@ export const authService = {
       resetCode,
     );
 
+    // [EMAIL] Send async, don't block response
     sendEmail({
       to: user.email,
       subject: "🔐 بازیابی رمز عبور",
@@ -451,6 +481,7 @@ export const authService = {
     return genericMessage;
   },
 
+  // [AUTH] Change password for authenticated user
   async changePassword(userId: string, data: ChangePasswordInput) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -467,6 +498,7 @@ export const authService = {
 
     const hashedPassword = await hashPassword(data.newPassword);
 
+    // [DB] Update password and invalidate all sessions
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -480,6 +512,7 @@ export const authService = {
     };
   },
 
+  // [AUTH] Request email change - send OTP to new email
   async requestChangeEmail(userId: string, data: RequestChangeEmailInput) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -493,6 +526,7 @@ export const authService = {
       });
     }
 
+    // [DB] Check if new email is taken
     const existingUser = await prisma.user.findUnique({
       where: { email: data.newEmail.toLowerCase() },
     });
@@ -513,6 +547,7 @@ export const authService = {
     const code = generateCode();
     const expires = getOtpExpiresAt();
 
+    // [DB] Store pending email change
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -528,6 +563,7 @@ export const authService = {
       code,
     );
 
+    // [EMAIL] Send OTP to new email
     sendEmail({
       to: data.newEmail,
       subject: "📧 تایید تغییر ایمیل",
@@ -541,6 +577,7 @@ export const authService = {
     };
   },
 
+  // [AUTH] Verify OTP and apply new email
   async verifyChangeEmail(userId: string, data: VerifyChangeEmailInput) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -559,6 +596,7 @@ export const authService = {
     }
 
     if (user.changeEmailExpires < new Date()) {
+      // [DB] Clear expired change email request
       await prisma.user.update({
         where: { id: userId },
         data: {
@@ -579,6 +617,7 @@ export const authService = {
       });
     }
 
+    // [DB] Race condition check - email taken during process
     const existingUser = await prisma.user.findUnique({
       where: { email: user.pendingNewEmail },
     });
@@ -599,6 +638,7 @@ export const authService = {
       );
     }
 
+    // [DB] Apply new email and invalidate all sessions
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -616,6 +656,7 @@ export const authService = {
     };
   },
 
+  // [AUTH] Resend change email OTP
   async resendChangeEmailCode(userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -630,6 +671,7 @@ export const authService = {
     const code = generateCode();
     const expires = getOtpExpiresAt();
 
+    // [DB] Store new OTP
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -644,6 +686,7 @@ export const authService = {
       code,
     );
 
+    // [EMAIL] Resend OTP to pending new email
     sendEmail({
       to: user.pendingNewEmail,
       subject: "📧 تایید تغییر ایمیل",

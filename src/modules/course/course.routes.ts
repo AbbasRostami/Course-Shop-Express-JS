@@ -27,6 +27,7 @@ import {
 
 const router = Router();
 
+// [GET] Admin list courses
 router.get(
   "/admin",
   authentication,
@@ -35,6 +36,7 @@ router.get(
   asyncHandler(getAdminCoursesController),
 );
 
+// [PATCH] Toggle course publish
 router.patch(
   "/:id/publish",
   authentication,
@@ -43,6 +45,7 @@ router.patch(
   asyncHandler(togglePublishController),
 );
 
+// [POST] Create course with image upload
 router.post(
   "/",
   authentication,
@@ -52,6 +55,7 @@ router.post(
   asyncHandler(createCourseController),
 );
 
+// [PUT] Update course with optional image upload
 router.put(
   "/:id",
   authentication,
@@ -61,6 +65,7 @@ router.put(
   asyncHandler(updateCourseController),
 );
 
+// [DELETE] Delete course
 router.delete(
   "/:id",
   authentication,
@@ -69,18 +74,21 @@ router.delete(
   asyncHandler(deleteCourseController),
 );
 
+// [GET] Public list courses
 router.get(
   "/",
   validate(listCoursesPublicSchema),
   asyncHandler(getPublicCoursesController),
 );
 
+// [GET] Get course by slug
 router.get(
   "/:slug",
   validate(getCourseBySlugSchema),
   asyncHandler(getCourseBySlugController),
 );
 
+// [POST] Toggle reaction on course
 router.post(
   "/:id/reaction",
   authentication,

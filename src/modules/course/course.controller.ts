@@ -7,7 +7,9 @@ import {
   ListCoursesPublicQuery,
 } from "./course.validator.js";
 
+// [POST] Create course
 export const createCourseController: RequestHandler = async (req, res) => {
+  // [UPLOAD] Extract image URL if uploaded
   let imageUrl: string | undefined = undefined;
   if (req.file) {
     imageUrl = req.file.path;
@@ -27,15 +29,12 @@ export const createCourseController: RequestHandler = async (req, res) => {
   });
 };
 
-export const updateCourseController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+// [PUT] Update course
+export const updateCourseController: RequestHandler = async (req, res, next) => {
   const id = req.params.id as string;
-
   const updateData: Record<string, unknown> = { ...req.body };
 
+  // [UPLOAD] Attach image URL if uploaded
   if (req.file?.path) {
     updateData.imageUrl = req.file.path;
   }
@@ -55,6 +54,7 @@ export const updateCourseController: RequestHandler = async (
   });
 };
 
+// [PATCH] Toggle publish status
 export const togglePublishController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
   const { published } = req.body;
@@ -72,18 +72,18 @@ export const togglePublishController: RequestHandler = async (req, res) => {
   });
 };
 
+// [DELETE] Delete course
 export const deleteCourseController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
   await courseService.deleteCourse(id);
 
   return res.status(200).json({
     status: "success",
-    data: {
-      message: "دوره با موفقیت حذف شد",
-    },
+    data: { message: "دوره با موفقیت حذف شد" },
   });
 };
 
+// [GET] Public list courses
 export const getPublicCoursesController: RequestHandler = async (req, res) => {
   const userId = getUserIdFromRequest(req);
 
@@ -98,6 +98,7 @@ export const getPublicCoursesController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Admin list courses
 export const getAdminCoursesController: RequestHandler = async (req, res) => {
   const result = await courseService.getAdminCourses(
     req.query as ListCoursesAdminQuery,
@@ -109,6 +110,7 @@ export const getAdminCoursesController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Get course by slug
 export const getCourseBySlugController: RequestHandler = async (req, res) => {
   const slug = req.params.slug as string;
   const userId = getUserIdFromRequest(req);

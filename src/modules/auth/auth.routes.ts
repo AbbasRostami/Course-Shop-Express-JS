@@ -43,6 +43,7 @@ import {
 
 const router = Router();
 
+// [POST] Register
 router.post(
   "/register",
   registerIpLimiter,
@@ -51,12 +52,14 @@ router.post(
   asyncHandler(registerController),
 );
 
+// [POST] Verify email OTP
 router.post(
   "/verify-email",
   validate(verifyEmailSchema),
   asyncHandler(verifyEmailController),
 );
 
+// [POST] Login
 router.post(
   "/login",
   loginLimiter,
@@ -64,9 +67,13 @@ router.post(
   asyncHandler(loginController),
 );
 
+// [POST] Refresh token
 router.post("/refresh", asyncHandler(refreshController));
+
+// [POST] Logout
 router.post("/logout", asyncHandler(logoutController));
 
+// [POST] Forgot password
 router.post(
   "/forgot-password",
   forgotPasswordLimiter,
@@ -74,6 +81,7 @@ router.post(
   asyncHandler(forgotPasswordController),
 );
 
+// [POST] Reset password
 router.post(
   "/reset-password",
   resetPasswordLimiter,
@@ -81,6 +89,7 @@ router.post(
   asyncHandler(resetPasswordController),
 );
 
+// [POST] Resend verification OTP
 router.post(
   "/resend-verification",
   resendVerificationLimiter,
@@ -88,6 +97,7 @@ router.post(
   asyncHandler(resendVerificationController),
 );
 
+// [POST] Resend reset code
 router.post(
   "/resend-reset-code",
   resendResetCodeLimiter,
@@ -95,6 +105,7 @@ router.post(
   asyncHandler(resendResetCodeController),
 );
 
+// [POST] Change password (auth required)
 router.post(
   "/change-password",
   authentication,
@@ -102,6 +113,7 @@ router.post(
   asyncHandler(changePasswordController),
 );
 
+// [POST] Request email change (auth required)
 router.post(
   "/request-change-email",
   authentication,
@@ -110,6 +122,7 @@ router.post(
   asyncHandler(requestChangeEmailController),
 );
 
+// [POST] Verify email change (auth required)
 router.post(
   "/verify-change-email",
   authentication,
@@ -117,6 +130,7 @@ router.post(
   asyncHandler(verifyChangeEmailController),
 );
 
+// [POST] Resend change email code (auth required)
 router.post(
   "/resend-change-email-code",
   authentication,

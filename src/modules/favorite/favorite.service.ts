@@ -12,6 +12,7 @@ import {
 } from "./favorite.types.js";
 import { ListFavoritesQuery } from "./favorite.validator.js";
 
+// [UTIL] Format course favorite for response
 const formatCourseFavorite = (item: CourseFavoriteWithRelations) => {
   const { _count, categoryId, ...courseRest } = item.course;
   return {
@@ -23,6 +24,8 @@ const formatCourseFavorite = (item: CourseFavoriteWithRelations) => {
     },
   };
 };
+
+// [UTIL] Format post favorite for response
 const formatPostFavorite = (item: PostFavoriteWithRelations) => {
   const { _count, categoryId, ...postRest } = item.post;
   return {
@@ -36,6 +39,7 @@ const formatPostFavorite = (item: PostFavoriteWithRelations) => {
 };
 
 export const favoriteService = {
+  // [DB] Toggle course favorite - add or remove
   async toggleCourseFavorite(userId: string, courseId: string) {
     const course = await prisma.course.findFirst({
       where: {
@@ -51,11 +55,10 @@ export const favoriteService = {
     }
 
     const existing = await prisma.courseFavorite.findUnique({
-      where: {
-        userId_courseId: { userId, courseId },
-      },
+      where: { userId_courseId: { userId, courseId } },
     });
 
+    // [LOGIC] Remove if exists
     if (existing) {
       await prisma.courseFavorite.delete({
         where: { userId_courseId: { userId, courseId } },
@@ -67,6 +70,7 @@ export const favoriteService = {
       };
     }
 
+    // [DB] Add to favorites
     await prisma.courseFavorite.create({
       data: { userId, courseId },
     });
@@ -77,6 +81,7 @@ export const favoriteService = {
     };
   },
 
+  // [DB] Get user's course favorites with pagination
   async getMyCourseFavorites(userId: string, query: ListFavoritesQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -97,6 +102,7 @@ export const favoriteService = {
     };
   },
 
+  // [DB] Toggle post favorite - add or remove
   async togglePostFavorite(userId: string, postId: string) {
     const post = await prisma.post.findFirst({
       where: {
@@ -112,11 +118,10 @@ export const favoriteService = {
     }
 
     const existing = await prisma.blogFavorite.findUnique({
-      where: {
-        userId_postId: { userId, postId },
-      },
+      where: { userId_postId: { userId, postId } },
     });
 
+    // [LOGIC] Remove if exists
     if (existing) {
       await prisma.blogFavorite.delete({
         where: { userId_postId: { userId, postId } },
@@ -128,6 +133,7 @@ export const favoriteService = {
       };
     }
 
+    // [DB] Add to favorites
     await prisma.blogFavorite.create({
       data: { userId, postId },
     });
@@ -138,6 +144,7 @@ export const favoriteService = {
     };
   },
 
+  // [DB] Get user's post favorites with pagination
   async getMyPostFavorites(userId: string, query: ListFavoritesQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 

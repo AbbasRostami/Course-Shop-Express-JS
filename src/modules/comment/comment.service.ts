@@ -25,22 +25,24 @@ import {
   ListPostCommentsQuery,
 } from "./comment.validator.js";
 
-// ─── Helpers
-
+// [UTIL] Format comment - replace _count with stats
 const formatComment = (comment: CommentWithUser): CommentWithStats => {
   const { _count, ...rest } = comment;
   return { ...rest, stats: _count };
 };
 
+// [UTIL] Format admin comment - replace _count with stats
 const formatAdminComment = (comment: CommentWithMeta): CommentMetaWithStats => {
   const { _count, ...rest } = comment;
   return { ...rest, stats: _count };
 };
 
+// [UTIL] Format list of admin comments
 const formatAdminComments = (
   comments: CommentWithMeta[],
 ): CommentMetaWithStats[] => comments.map(formatAdminComment);
 
+// [UTIL] Build nested comment tree from flat list
 const buildCommentTree = (comments: CommentWithUser[]): CommentTreeNode[] => {
   const map = new Map<string, CommentTreeNode>();
 
@@ -69,6 +71,7 @@ const buildCommentTree = (comments: CommentWithUser[]): CommentTreeNode[] => {
     parentNode.replies.push(currentNode);
   }
 
+  // [UTIL] Sync reply counts from actual tree
   const syncCounts = (nodes: CommentTreeNode[]): CommentTreeNode[] => {
     return nodes.map((node) => ({
       ...node,
@@ -83,6 +86,7 @@ const buildCommentTree = (comments: CommentWithUser[]): CommentTreeNode[] => {
   return syncCounts(roots);
 };
 
+// [UTIL] Attach reactions to comment tree nodes
 const addReactionsToTree = (
   nodes: CommentTreeNode[],
   reactionMap: Map<string, CommentReactionState>,
@@ -98,6 +102,7 @@ const addReactionsToTree = (
   }));
 };
 
+// [DB] Fetch all descendant comments recursively
 const fetchCommentDescendants = async (
   whereBase: { courseId?: string; postId?: string },
   rootComments: CommentWithUser[],
@@ -125,12 +130,12 @@ const fetchCommentDescendants = async (
   return allComments;
 };
 
-// ─── Service
-
 export const commentService = {
+  // [DB] Create new comment
   async createComment(userId: string, data: CreateCommentInput) {
     const { content, courseId, postId, parentId } = data;
 
+    // [DB] Validate course exists and is published
     if (courseId) {
       const course = await prisma.course.findFirst({
         where: {
@@ -146,6 +151,7 @@ export const commentService = {
       }
     }
 
+    // [DB] Validate post exists and is published
     if (postId) {
       const post = await prisma.post.findFirst({
         where: {
@@ -161,6 +167,7 @@ export const commentService = {
       }
     }
 
+    // [DB] Validate parent comment belongs to same target
     if (parentId) {
       const parent = await prisma.comment.findUnique({
         where: { id: parentId },
@@ -195,6 +202,7 @@ export const commentService = {
     return formatComment(comment);
   },
 
+  // [DB] Get paginated comment tree for a course
   async getCourseComments(
     slug: string,
     query: ListCourseCommentsQuery,
@@ -208,11 +216,7 @@ export const commentService = {
         published: true,
         category: { show: true },
       },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-      },
+      select: { id: true, title: true, slug: true },
     });
 
     if (!course) {
@@ -236,6 +240,7 @@ export const commentService = {
       prisma.comment.count({ where: rootWhere }),
     ]);
 
+    // [LOGIC] Fetch all nested replies
     const flatComments = await fetchCommentDescendants(
       { courseId: course.id },
       rootComments,
@@ -243,6 +248,7 @@ export const commentService = {
 
     const tree = buildCommentTree(flatComments);
 
+    // [DB] Attach reactions per comment
     const commentIds = flatComments.map((c) => c.id);
     const reactionMap = await getReactionCountsForList(
       "commentId",
@@ -258,6 +264,7 @@ export const commentService = {
     };
   },
 
+  // [DB] Get paginated comment tree for a post
   async getPostComments(
     slug: string,
     query: ListPostCommentsQuery,
@@ -271,11 +278,7 @@ export const commentService = {
         published: true,
         category: { show: true },
       },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-      },
+      select: { id: true, title: true, slug: true },
     });
 
     if (!post) {
@@ -299,6 +302,7 @@ export const commentService = {
       prisma.comment.count({ where: rootWhere }),
     ]);
 
+    // [LOGIC] Fetch all nested replies
     const flatComments = await fetchCommentDescendants(
       { postId: post.id },
       rootComments,
@@ -306,6 +310,7 @@ export const commentService = {
 
     const tree = buildCommentTree(flatComments);
 
+    // [DB] Attach reactions per comment
     const commentIds = flatComments.map((c) => c.id);
     const reactionMap = await getReactionCountsForList(
       "commentId",
@@ -321,6 +326,7 @@ export const commentService = {
     };
   },
 
+  // [DB] Get current user's comments with pagination
   async getMyComments(userId: string, query: ListMyCommentsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -347,6 +353,7 @@ export const commentService = {
     };
   },
 
+  // [DB] Admin get all comments with filters
   async getAdminComments(query: ListAdminCommentsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -380,15 +387,15 @@ export const commentService = {
     };
   },
 
+  // [DB] Admin approve or reject comment
   async changeStatus(id: string, status: CommentStatus) {
-    const comment = await prisma.comment.findUnique({
-      where: { id },
-    });
+    const comment = await prisma.comment.findUnique({ where: { id } });
 
     if (!comment) {
       throw new AppError("کامنت مورد نظر یافت نشد", 404);
     }
 
+    // [LOGIC] Prevent redundant status change
     if (comment.status === status) {
       const msg =
         status === "APPROVED"
@@ -407,6 +414,7 @@ export const commentService = {
     return formatAdminComment(updated);
   },
 
+  // [DB] Delete comment - admin or owner only
   async deleteComment(commentId: string, userId: string, isAdmin: boolean) {
     const comment = await prisma.comment.findUnique({
       where: { id: commentId },
@@ -417,12 +425,11 @@ export const commentService = {
       throw new AppError("کامنت مورد نظر یافت نشد", 404);
     }
 
+    // [AUTH] Block non-owner non-admin
     if (!isAdmin && comment.userId !== userId) {
       throw new AppError("شما اجازه حذف این کامنت را ندارید", 403);
     }
 
-    await prisma.comment.delete({
-      where: { id: commentId },
-    });
+    await prisma.comment.delete({ where: { id: commentId } });
   },
 };

@@ -6,6 +6,7 @@ import {
 } from "../discount/discount.service.js";
 import { cartInclude, CartWithItems } from "./cart.types.js";
 
+// [UTIL] Format cart for response
 const formatCart = (cart: CartWithItems) => {
   const formattedItems = cart.items.map((item) => ({
     id: item.id,
@@ -30,6 +31,7 @@ const formatCart = (cart: CartWithItems) => {
 };
 
 export const cartService = {
+  // [DB] Get existing cart or create new one
   async getOrCreateCart(userId: string) {
     let cart = await prisma.cart.findUnique({
       where: { userId },
@@ -46,7 +48,9 @@ export const cartService = {
     return cart;
   },
 
+  // [LOGIC] Add course to cart
   async addItem(userId: string, courseId: string) {
+    // [DB] Validate course exists and is published
     const course = await prisma.course.findFirst({
       where: {
         id: courseId,
@@ -60,6 +64,7 @@ export const cartService = {
       throw new AppError("دوره مورد نظر یافت نشد یا غیرفعال است", 404);
     }
 
+    // [LOGIC] Block free courses
     if (course.price === 0) {
       throw new AppError(
         "دوره‌های رایگان نیازی به سبد خرید ندارند. مستقیم ثبت‌نام کنید",
@@ -67,6 +72,7 @@ export const cartService = {
       );
     }
 
+    // [DB] Check enrollment
     const isEnrolled = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });
@@ -77,20 +83,21 @@ export const cartService = {
 
     const cart = await this.getOrCreateCart(userId);
 
+    // [LOGIC] Prevent duplicates
     const alreadyInCart = cart.items.some((i) => i.courseId === courseId);
     if (alreadyInCart) {
       throw new AppError("این دوره از قبل در سبد خرید شما موجود است", 409);
     }
 
+    // [DB] Add item to cart
     await prisma.cartItem.create({
       data: { cartId: cart.id, courseId },
     });
 
-    return {
-      message: "دوره به سبد خرید اضافه شد",
-    };
+    return { message: "دوره به سبد خرید اضافه شد" };
   },
 
+  // [LOGIC] Get cart with discount calculation
   async getCart(userId: string) {
     const cart = await this.getOrCreateCart(userId);
     const formatted = formatCart(cart);
@@ -98,6 +105,7 @@ export const cartService = {
     const { totalAmount, ...rest } = formatted;
     const subtotal = totalAmount;
 
+    // [LOGIC] Apply discount if exists
     if (cart.discountCode) {
       try {
         const discount = await validateDiscount(cart.discountCode);
@@ -115,6 +123,7 @@ export const cartService = {
           totalPayment: subtotal - amount,
         };
       } catch {
+        // [DB] Clear invalid discount code
         await prisma.cart.update({
           where: { userId },
           data: { discountCode: null },
@@ -130,6 +139,7 @@ export const cartService = {
     };
   },
 
+  // [DB] Remove course from cart
   async removeItem(userId: string, courseId: string) {
     const cart = await this.getOrCreateCart(userId);
 
@@ -142,11 +152,10 @@ export const cartService = {
       where: { id: item.id },
     });
 
-    return {
-      message: "دوره از سبد خرید حذف شد",
-    };
+    return { message: "دوره از سبد خرید حذف شد" };
   },
 
+  // [DB] Clear all cart items
   async clearCart(userId: string) {
     const cart = await this.getOrCreateCart(userId);
 
@@ -154,8 +163,6 @@ export const cartService = {
       where: { cartId: cart.id },
     });
 
-    return {
-      message: "سبد خرید با موفقیت خالی شد",
-    };
+    return { message: "سبد خرید با موفقیت خالی شد" };
   },
 };

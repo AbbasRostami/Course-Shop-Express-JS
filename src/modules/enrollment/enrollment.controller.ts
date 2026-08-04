@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { enrollmentService } from "./enrollment.service.js";
 import { ListMyCoursesQuery } from "./enrollment.validator.js";
 
+// [POST] Enroll in course
 export const enrollController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const slug = req.params.slug as string;
@@ -14,6 +15,7 @@ export const enrollController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Get my enrolled courses
 export const getMyEnrollmentsController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 

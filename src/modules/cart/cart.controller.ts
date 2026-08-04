@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { cartService } from "./cart.service.js";
 import { AddToCartInput } from "./cart.validator.js";
 
+// [POST] Add course to cart
 export const addToCartController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const { courseId } = req.body as AddToCartInput;
@@ -14,6 +15,7 @@ export const addToCartController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Get user cart
 export const getCartController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const cart = await cartService.getCart(userId);
@@ -24,6 +26,7 @@ export const getCartController: RequestHandler = async (req, res) => {
   });
 };
 
+// [DELETE] Remove course from cart
 export const removeFromCartController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const courseId = req.params.courseId as string;
@@ -36,6 +39,7 @@ export const removeFromCartController: RequestHandler = async (req, res) => {
   });
 };
 
+// [DELETE] Clear entire cart
 export const clearCartController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await cartService.clearCart(userId);

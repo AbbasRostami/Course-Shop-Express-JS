@@ -17,32 +17,37 @@ import { addToCartSchema, removeFromCartSchema } from "./cart.validator.js";
 
 const router = Router();
 
+// [MW] All cart routes require auth
 router.use(authentication);
 
-// ─── Cart
+// [GET] Get user cart
 router.get("/", asyncHandler(getCartController));
 
+// [POST] Add course to cart
 router.post(
   "/items",
   validate(addToCartSchema),
   asyncHandler(addToCartController),
 );
 
+// [DELETE] Remove course from cart
 router.delete(
   "/items/:courseId",
   validate(removeFromCartSchema),
   asyncHandler(removeFromCartController),
 );
 
+// [DELETE] Clear entire cart
 router.delete("/", asyncHandler(clearCartController));
 
-// ─── Discount
+// [POST] Apply discount code
 router.post(
   "/apply-discount",
   validate(applyDiscountSchema),
   asyncHandler(applyDiscountController),
 );
 
+// [DELETE] Remove discount code
 router.delete("/discount", asyncHandler(removeDiscountController));
 
 export default router;

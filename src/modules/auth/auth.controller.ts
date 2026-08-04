@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { AppError } from "../../utils/AppError.js";
 import { authService } from "./auth.service.js";
 
+// [CONFIG] Access token cookie options (15 min)
 const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: true,
@@ -10,6 +11,7 @@ const ACCESS_COOKIE_OPTIONS = {
   maxAge: 15 * 60 * 1000,
 };
 
+// [CONFIG] Refresh token cookie options (7 days)
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: true,
@@ -18,6 +20,7 @@ const REFRESH_COOKIE_OPTIONS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+// [CONFIG] Cookie clear options
 const CLEAR_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: true,
@@ -25,6 +28,7 @@ const CLEAR_COOKIE_OPTIONS = {
   path: "/",
 };
 
+// [POST] Register
 export const registerController: RequestHandler = async (req, res) => {
   const result = await authService.register(req.body);
 
@@ -37,6 +41,7 @@ export const registerController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Verify email OTP and auto-login
 export const verifyEmailController: RequestHandler = async (req, res) => {
   const { accessToken, refreshToken, user } = await authService.verifyEmail(
     req.body,
@@ -55,6 +60,7 @@ export const verifyEmailController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Login
 export const loginController: RequestHandler = async (req, res) => {
   const { accessToken, refreshToken, user } = await authService.login(req.body);
 
@@ -71,6 +77,7 @@ export const loginController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Refresh access token
 export const refreshController: RequestHandler = async (req, res, next) => {
   const token = req.cookies?.refreshToken || req.body?.refreshToken;
 
@@ -92,6 +99,7 @@ export const refreshController: RequestHandler = async (req, res, next) => {
   });
 };
 
+// [POST] Logout and clear cookies
 export const logoutController: RequestHandler = async (req, res) => {
   const token =
     req.cookies?.refreshToken ??
@@ -108,12 +116,11 @@ export const logoutController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: {
-      message: "خروج با موفقیت انجام شد",
-    },
+    data: { message: "خروج با موفقیت انجام شد" },
   });
 };
 
+// [POST] Forgot password
 export const forgotPasswordController: RequestHandler = async (req, res) => {
   const result = await authService.forgotPassword(req.body);
 
@@ -123,6 +130,7 @@ export const forgotPasswordController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Reset password and clear sessions
 export const resetPasswordController: RequestHandler = async (req, res) => {
   const result = await authService.resetPassword(req.body);
 
@@ -135,10 +143,8 @@ export const resetPasswordController: RequestHandler = async (req, res) => {
   });
 };
 
-export const resendVerificationController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [POST] Resend email verification code
+export const resendVerificationController: RequestHandler = async (req, res) => {
   const result = await authService.resendVerification(req.body);
 
   return res.status(200).json({
@@ -147,6 +153,7 @@ export const resendVerificationController: RequestHandler = async (
   });
 };
 
+// [POST] Resend password reset code
 export const resendResetCodeController: RequestHandler = async (req, res) => {
   const result = await authService.resendResetCode(req.body);
 
@@ -156,6 +163,7 @@ export const resendResetCodeController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Change password and clear sessions
 export const changePasswordController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await authService.changePassword(userId, req.body);
@@ -169,10 +177,8 @@ export const changePasswordController: RequestHandler = async (req, res) => {
   });
 };
 
-export const requestChangeEmailController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [POST] Request email change
+export const requestChangeEmailController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await authService.requestChangeEmail(userId, req.body);
 
@@ -182,6 +188,7 @@ export const requestChangeEmailController: RequestHandler = async (
   });
 };
 
+// [POST] Verify email change and clear sessions
 export const verifyChangeEmailController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await authService.verifyChangeEmail(userId, req.body);
@@ -195,10 +202,8 @@ export const verifyChangeEmailController: RequestHandler = async (req, res) => {
   });
 };
 
-export const resendChangeEmailCodeController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [POST] Resend change email code
+export const resendChangeEmailCodeController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await authService.resendChangeEmailCode(userId);
 

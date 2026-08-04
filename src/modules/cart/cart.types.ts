@@ -1,5 +1,6 @@
 import { Prisma } from "../../../generated/prisma/client.js";
 
+// [DB] Cart include with items and course details
 export const cartInclude = {
   items: {
     include: {
@@ -27,6 +28,7 @@ export const cartInclude = {
   },
 } satisfies Prisma.CartInclude;
 
+// [TYPE] Cart with items payload
 export type CartWithItems = Prisma.CartGetPayload<{
   include: typeof cartInclude;
 }>;

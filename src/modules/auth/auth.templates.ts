@@ -1,3 +1,4 @@
+// [EMAIL] Verification email template
 export const getVerificationEmailTemplate = (
   name: string,
   verificationCode: string,
@@ -28,6 +29,7 @@ export const getVerificationEmailTemplate = (
     `;
 };
 
+// [EMAIL] Reset password email template
 export const getResetPasswordEmailTemplate = (
   name: string,
   resetCode: string,
@@ -61,6 +63,7 @@ export const getResetPasswordEmailTemplate = (
   `;
 };
 
+// [EMAIL] Change email verification template
 export const getChangeEmailTemplate = (
   name: string,
   newEmail: string,

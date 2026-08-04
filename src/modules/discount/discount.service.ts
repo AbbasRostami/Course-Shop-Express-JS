@@ -11,10 +11,9 @@ import {
   ListDiscountsQuery,
 } from "./discount.validator.js";
 
+// [LOGIC] Validate discount code is usable
 export const validateDiscount = async (code: string) => {
-  const discount = await prisma.discount.findUnique({
-    where: { code },
-  });
+  const discount = await prisma.discount.findUnique({ where: { code } });
 
   if (!discount) {
     throw new AppError("کد تخفیف یافت نشد", 404);
@@ -35,6 +34,7 @@ export const validateDiscount = async (code: string) => {
   return discount;
 };
 
+// [LOGIC] Calculate discount amount from subtotal
 export const calculateDiscountAmount = (
   subtotal: number,
   discount: { type: string; value: number },
@@ -46,6 +46,7 @@ export const calculateDiscountAmount = (
 };
 
 export const discountService = {
+  // [DB] Create new discount code
   async createDiscount(data: CreateDiscountInput) {
     const existing = await prisma.discount.findUnique({
       where: { code: data.code },
@@ -57,6 +58,7 @@ export const discountService = {
       });
     }
 
+    // [LOGIC] Calculate expiry date from days
     const expiresAt = new Date(
       Date.now() + data.expiresInDays * 24 * 60 * 60 * 1000,
     );
@@ -72,6 +74,7 @@ export const discountService = {
     });
   },
 
+  // [DB] List discounts with filters and pagination
   async listDiscounts(query: ListDiscountsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -101,6 +104,7 @@ export const discountService = {
     };
   },
 
+  // [DB] Toggle discount active status
   async toggleDiscount(id: string) {
     const discount = await prisma.discount.findUnique({ where: { id } });
 
@@ -108,6 +112,7 @@ export const discountService = {
       throw new AppError("کد تخفیف یافت نشد", 404);
     }
 
+    // [LOGIC] Block reactivation of expired discount
     if (!discount.active && discount.expiresAt < new Date()) {
       throw new AppError(
         "نمی‌توان کد منقضی شده را فعال کرد. ابتدا کد جدید بسازید",
@@ -115,6 +120,7 @@ export const discountService = {
       );
     }
 
+    // [LOGIC] Block reactivation if usage limit reached
     if (!discount.active && discount.usedCount >= discount.maxUses) {
       throw new AppError(
         "نمی‌توان کد را فعال کرد، ظرفیت استفاده تمام شده است",
@@ -128,6 +134,7 @@ export const discountService = {
     });
   },
 
+  // [DB] Delete discount code
   async deleteDiscount(id: string) {
     const discount = await prisma.discount.findUnique({ where: { id } });
 
@@ -138,6 +145,7 @@ export const discountService = {
     await prisma.discount.delete({ where: { id } });
   },
 
+  // [DB] Apply discount code to user cart
   async applyDiscountToCart(userId: string, data: ApplyDiscountInput) {
     const discount = await validateDiscount(data.code);
 
@@ -165,6 +173,7 @@ export const discountService = {
     };
   },
 
+  // [DB] Remove discount code from user cart
   async removeDiscountFromCart(userId: string) {
     const cart = await prisma.cart.findUnique({ where: { userId } });
 

@@ -24,6 +24,7 @@ import {
   ListCoursesPublicQuery,
 } from "./course.validator.js";
 
+// [UTIL] Format course - replace _count with stats
 const formatCourse = (course: CourseWithRelations) => {
   const { _count, categoryId, teacherId, ...rest } = course;
   return {
@@ -35,9 +36,11 @@ const formatCourse = (course: CourseWithRelations) => {
   };
 };
 
+// [UTIL] Format course list
 const formatCourses = (courses: CourseWithRelations[]): CourseWithStats[] =>
   courses.map(formatCourse);
 
+// [ERROR] Handle duplicate title (P2002)
 const handleUniqueError = (error: unknown): never => {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -50,6 +53,7 @@ const handleUniqueError = (error: unknown): never => {
   throw error;
 };
 
+// [DB] Validate category exists
 const validateCategoryExists = async (categoryId: string) => {
   const category = await prisma.category.findUnique({
     where: { id: categoryId },
@@ -62,6 +66,7 @@ const validateCategoryExists = async (categoryId: string) => {
   }
 };
 
+// [DB] Validate teacher exists
 const validateTeacherExists = async (teacherId: string) => {
   const teacher = await prisma.teacher.findUnique({
     where: { id: teacherId },
@@ -75,9 +80,11 @@ const validateTeacherExists = async (teacherId: string) => {
 };
 
 export const courseService = {
+  // [DB] Create new course
   async createCourse(data: CreateCourseInputWithImage) {
     await validateCategoryExists(data.categoryId);
     await validateTeacherExists(data.teacherId);
+
     try {
       const course = await prisma.course.create({
         data: {
@@ -96,6 +103,7 @@ export const courseService = {
 
       return formatCourse(course);
     } catch (error) {
+      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -104,9 +112,11 @@ export const courseService = {
     }
   },
 
+  // [DB] Update existing course
   async updateCourse(id: string, data: UpdateCourseInputWithImage) {
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
+      // [CLEANUP] Remove uploaded image if course not found
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -122,30 +132,21 @@ export const courseService = {
 
     const updateData: Prisma.CourseUpdateInput = {};
 
+    // [LOGIC] Auto-generate slug on title change
     if (data.title !== undefined) {
       updateData.title = data.title;
       updateData.slug = createSlug(data.title);
     }
-    if (data.description !== undefined) {
-      updateData.description = data.description;
-    }
-    if (data.price !== undefined) {
-      updateData.price = data.price;
-    }
-    if (data.level !== undefined) {
-      updateData.level = data.level;
-    }
-    if (data.published !== undefined) {
-      updateData.published = data.published;
-    }
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.price !== undefined) updateData.price = data.price;
+    if (data.level !== undefined) updateData.level = data.level;
+    if (data.published !== undefined) updateData.published = data.published;
     if (data.categoryId !== undefined) {
       updateData.category = { connect: { id: data.categoryId } };
     }
-
     if (data.teacherId !== undefined) {
       updateData.teacher = { connect: { id: data.teacherId } };
     }
-
     if (data.imageUrl) {
       updateData.imageUrl = data.imageUrl;
     }
@@ -157,12 +158,14 @@ export const courseService = {
         include: courseInclude,
       });
 
+      // [CLEANUP] Remove old image after successful update
       if (data.imageUrl && existing.imageUrl) {
         await removeCloudinaryImage(existing.imageUrl);
       }
 
       return formatCourse(course);
     } catch (error) {
+      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -171,6 +174,7 @@ export const courseService = {
     }
   },
 
+  // [DB] Toggle course publish status
   async togglePublish(id: string, published: boolean) {
     const existing = await prisma.course.findUnique({
       where: { id },
@@ -181,6 +185,7 @@ export const courseService = {
       throw new AppError("دوره مورد نظر یافت نشد", 404);
     }
 
+    // [LOGIC] Prevent redundant toggle
     if (existing.published === published) {
       throw new AppError(
         published ? "دوره از قبل منتشر شده است" : "دوره از قبل پنهان است",
@@ -188,6 +193,7 @@ export const courseService = {
       );
     }
 
+    // [LOGIC] Block publish if category is hidden
     if (published && existing.category && !existing.category.show) {
       throw new AppError(
         "نمی‌توان دوره را منتشر کرد چون دسته‌بندی آن غیرفعال است",
@@ -204,6 +210,7 @@ export const courseService = {
     return formatCourse(course);
   },
 
+  // [DB] Delete course and remove image
   async deleteCourse(id: string) {
     const existing = await prisma.course.findUnique({ where: { id } });
 
@@ -213,11 +220,13 @@ export const courseService = {
 
     await prisma.course.delete({ where: { id } });
 
+    // [CLEANUP] Remove image from Cloudinary
     if (existing.imageUrl) {
       await removeCloudinaryImage(existing.imageUrl);
     }
   },
 
+  // [DB] Get public courses with filters and user context
   async getPublicCourses(query: ListCoursesPublicQuery, userId?: string) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -233,10 +242,9 @@ export const courseService = {
       };
     }
 
-    if (query.level) {
-      where.level = query.level;
-    }
+    if (query.level) where.level = query.level;
 
+    // [LOGIC] Price range filter
     if (query.minPrice || query.maxPrice) {
       where.price = {};
       if (query.minPrice) where.price.gte = Number(query.minPrice);
@@ -259,18 +267,14 @@ export const courseService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.course.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: courseInclude,
-      }),
+      prisma.course.findMany({ where, skip, take, orderBy, include: courseInclude }),
       prisma.course.count({ where }),
     ]);
+
     const formattedCourses = formatCourses(items);
     const courseIds = formattedCourses.map((c) => c.id);
 
+    // [DB] Load enrollment, reactions, favorites in parallel
     const [enrolledIds, reactionMap, favoriteIds] = await Promise.all([
       userId && courseIds.length > 0
         ? prisma.enrollment
@@ -310,20 +314,17 @@ export const courseService = {
     };
   },
 
+  // [DB] Admin get all courses with filters
   async getAdminCourses(query: ListCoursesAdminQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.CourseWhereInput = {};
 
     if (query.categories && query.categories.length > 0) {
-      where.category = {
-        slug: { in: query.categories },
-      };
+      where.category = { slug: { in: query.categories } };
     }
 
-    if (query.level) {
-      where.level = query.level;
-    }
+    if (query.level) where.level = query.level;
 
     if (query.published !== undefined) {
       where.published = query.published === "true";
@@ -341,13 +342,7 @@ export const courseService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.course.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: courseInclude,
-      }),
+      prisma.course.findMany({ where, skip, take, orderBy, include: courseInclude }),
       prisma.course.count({ where }),
     ]);
 
@@ -357,6 +352,7 @@ export const courseService = {
     };
   },
 
+  // [DB] Get single course by slug with user context
   async getCourseBySlug(slug: string, userId?: string) {
     const course = await prisma.course.findFirst({
       where: {
@@ -373,6 +369,7 @@ export const courseService = {
 
     const formattedCourse = formatCourse(course);
 
+    // [DB] Load enrollment, reactions, favorite in parallel
     const [enrollment, counts, myReaction, favorite] = await Promise.all([
       userId
         ? prisma.enrollment.findUnique({

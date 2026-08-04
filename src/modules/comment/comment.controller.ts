@@ -10,6 +10,7 @@ import {
   ListPostCommentsQuery,
 } from "./comment.validator.js";
 
+// [POST] Create comment
 export const createCommentController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const body = req.body as CreateCommentInput;
@@ -18,12 +19,11 @@ export const createCommentController: RequestHandler = async (req, res) => {
 
   return res.status(201).json({
     status: "success",
-    data: {
-      message: "کامنت با موفقیت ثبت شد و در انتظار تأیید است",
-    },
+    data: { message: "کامنت با موفقیت ثبت شد و در انتظار تأیید است" },
   });
 };
 
+// [GET] Get course comments
 export const getCourseCommentsController: RequestHandler = async (req, res) => {
   const slug = req.params.slug as string;
   const userId = getUserIdFromRequest(req);
@@ -40,6 +40,7 @@ export const getCourseCommentsController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Get post comments
 export const getPostCommentsController: RequestHandler = async (req, res) => {
   const slug = req.params.slug as string;
   const userId = getUserIdFromRequest(req);
@@ -56,6 +57,7 @@ export const getPostCommentsController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Get current user comments
 export const getMyCommentsController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
@@ -70,6 +72,7 @@ export const getMyCommentsController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Admin get all comments
 export const getAdminCommentsController: RequestHandler = async (req, res) => {
   const result = await commentService.getAdminComments(
     req.query as ListAdminCommentsQuery,
@@ -81,6 +84,7 @@ export const getAdminCommentsController: RequestHandler = async (req, res) => {
   });
 };
 
+// [PATCH] Approve comment
 export const approveCommentController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
 
@@ -88,12 +92,11 @@ export const approveCommentController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: {
-      message: "کامنت با موفقیت تأیید شد",
-    },
+    data: { message: "کامنت با موفقیت تأیید شد" },
   });
 };
 
+// [PATCH] Reject comment
 export const rejectCommentController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
 
@@ -101,12 +104,11 @@ export const rejectCommentController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: {
-      message: "کامنت با موفقیت رد شد",
-    },
+    data: { message: "کامنت با موفقیت رد شد" },
   });
 };
 
+// [DELETE] Delete comment
 export const deleteCommentController: RequestHandler = async (req, res) => {
   const commentId = req.params.id as string;
   const userId = req.user!.id;
@@ -116,8 +118,6 @@ export const deleteCommentController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: {
-      message: "کامنت با موفقیت حذف شد",
-    },
+    data: { message: "کامنت با موفقیت حذف شد" },
   });
 };

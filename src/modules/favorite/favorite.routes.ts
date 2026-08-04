@@ -16,28 +16,31 @@ import {
 
 const router = Router();
 
+// [MW] All favorite routes require auth
 router.use(authentication);
 
-// ─── Course Favorites
+// [POST] Toggle course favorite
 router.post(
   "/courses/:courseId",
   validate(toggleCourseFavoriteSchema),
   asyncHandler(toggleCourseFavoriteController),
 );
 
+// [GET] Get my course favorites
 router.get(
   "/courses",
   validate(listFavoritesSchema),
   asyncHandler(getMyCourseFavoritesController),
 );
 
-// ─── Post Favorites
+// [POST] Toggle post favorite
 router.post(
   "/posts/:postId",
   validate(togglePostFavoriteSchema),
   asyncHandler(togglePostFavoriteController),
 );
 
+// [GET] Get my post favorites
 router.get(
   "/posts",
   validate(listFavoritesSchema),

@@ -27,18 +27,21 @@ import {
 
 const router = Router();
 
+// [GET] Course comments (public)
 router.get(
   "/course/:slug",
   validate(listCourseCommentsSchema),
   asyncHandler(getCourseCommentsController),
 );
 
+// [GET] Post comments (public)
 router.get(
   "/post/:slug",
   validate(listPostCommentsSchema),
   asyncHandler(getPostCommentsController),
 );
 
+// [POST] Create comment
 router.post(
   "/",
   authentication,
@@ -46,6 +49,7 @@ router.post(
   asyncHandler(createCommentController),
 );
 
+// [GET] My comments
 router.get(
   "/my-comments",
   authentication,
@@ -53,6 +57,7 @@ router.get(
   asyncHandler(getMyCommentsController),
 );
 
+// [GET] Admin all comments
 router.get(
   "/admin",
   authentication,
@@ -61,6 +66,7 @@ router.get(
   asyncHandler(getAdminCommentsController),
 );
 
+// [DELETE] Delete comment
 router.delete(
   "/:id",
   authentication,
@@ -68,6 +74,7 @@ router.delete(
   asyncHandler(deleteCommentController),
 );
 
+// [POST] Toggle reaction on comment
 router.post(
   "/:id/reaction",
   authentication,
@@ -75,6 +82,7 @@ router.post(
   asyncHandler(toggleCommentReaction),
 );
 
+// [PATCH] Approve comment (admin)
 router.patch(
   "/:id/approve",
   authentication,
@@ -83,6 +91,7 @@ router.patch(
   asyncHandler(approveCommentController),
 );
 
+// [PATCH] Reject comment (admin)
 router.patch(
   "/:id/reject",
   authentication,

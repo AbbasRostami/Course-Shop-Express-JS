@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// [VALID] Create discount schema
 export const createDiscountSchema = z
   .object({
     body: z.object({
@@ -9,22 +10,18 @@ export const createDiscountSchema = z
         .max(50, "کد نباید بیشتر از ۵۰ کاراکتر باشد")
         .regex(/^[A-Z0-9_-]+$/i, "کد فقط می‌تواند شامل حروف، اعداد، _ و - باشد")
         .transform((val) => val.toUpperCase()),
-
       type: z.enum(["PERCENTAGE", "AMOUNT"], {
         error: "نوع تخفیف باید PERCENTAGE یا AMOUNT باشد",
       }),
-
       value: z.coerce
         .number({ error: "مقدار الزامی است" })
         .int("مقدار باید عدد صحیح باشد")
         .positive("مقدار باید مثبت باشد"),
-
       maxUses: z.coerce
         .number({ error: "حداکثر تعداد استفاده الزامی است" })
         .int()
         .min(1, "حداقل ۱")
         .max(10000, "حداکثر ۱۰۰۰۰"),
-
       expiresInDays: z.coerce
         .number({ error: "تعداد روز انقضا الزامی است" })
         .int()
@@ -34,6 +31,7 @@ export const createDiscountSchema = z
   })
   .refine(
     (data) => {
+      // [LOGIC] Validate value range based on type
       if (data.body.type === "PERCENTAGE") {
         return data.body.value >= 1 && data.body.value <= 100;
       }
@@ -46,6 +44,7 @@ export const createDiscountSchema = z
     },
   );
 
+// [VALID] List discounts schema
 export const listDiscountsSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
@@ -55,18 +54,21 @@ export const listDiscountsSchema = z.object({
   }),
 });
 
+// [VALID] Toggle discount schema
 export const toggleDiscountSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
   }),
 });
 
+// [VALID] Delete discount schema
 export const deleteDiscountSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
   }),
 });
 
+// [VALID] Apply discount schema
 export const applyDiscountSchema = z.object({
   body: z.object({
     code: z

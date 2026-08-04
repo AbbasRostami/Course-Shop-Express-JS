@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// [VALID] Create category schema
 export const createCategorySchema = z.object({
   body: z.object({
     name: z
@@ -16,6 +17,7 @@ export const createCategorySchema = z.object({
   }),
 });
 
+// [VALID] Update category schema
 export const updateCategorySchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
@@ -39,18 +41,21 @@ export const updateCategorySchema = z.object({
     }),
 });
 
+// [VALID] Delete category schema
 export const deleteCategorySchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
   }),
 });
 
+// [VALID] Get category by slug schema
 export const getCategoryBySlugSchema = z.object({
   params: z.object({
     slug: z.string().min(1, "slug الزامی است").max(100),
   }),
 });
 
+// [VALID] Toggle visibility schema
 export const toggleVisibilitySchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
@@ -60,6 +65,7 @@ export const toggleVisibilitySchema = z.object({
   }),
 });
 
+// [VALID] Admin list categories schema
 export const listCategoriesAdminSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
@@ -71,9 +77,5 @@ export const listCategoriesAdminSchema = z.object({
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>["body"];
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>["body"];
-export type ToggleVisibilityInput = z.infer<
-  typeof toggleVisibilitySchema
->["body"];
-export type ListCategoriesAdminQuery = z.infer<
-  typeof listCategoriesAdminSchema
->["query"];
+export type ToggleVisibilityInput = z.infer<typeof toggleVisibilitySchema>["body"];
+export type ListCategoriesAdminQuery = z.infer<typeof listCategoriesAdminSchema>["query"];

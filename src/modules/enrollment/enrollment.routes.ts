@@ -10,6 +10,7 @@ import { enrollSchema, listMyCoursesSchema } from "./enrollment.validator.js";
 
 const router = Router();
 
+// [GET] Get my enrolled courses
 router.get(
   "/my-courses",
   authentication,
@@ -17,6 +18,7 @@ router.get(
   asyncHandler(getMyEnrollmentsController),
 );
 
+// [POST] Enroll in free course by slug
 router.post(
   "/:slug",
   authentication,

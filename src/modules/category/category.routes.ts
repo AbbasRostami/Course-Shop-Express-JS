@@ -23,6 +23,7 @@ import {
 
 const router = Router();
 
+// [GET] Admin list categories
 router.get(
   "/admin",
   authentication,
@@ -31,6 +32,7 @@ router.get(
   asyncHandler(getAdminCategoriesController),
 );
 
+// [PATCH] Toggle category visibility
 router.patch(
   "/:id/visibility",
   authentication,
@@ -39,6 +41,7 @@ router.patch(
   asyncHandler(toggleVisibilityController),
 );
 
+// [POST] Create category
 router.post(
   "/",
   authentication,
@@ -47,6 +50,7 @@ router.post(
   asyncHandler(createCategoryController),
 );
 
+// [PUT] Update category
 router.put(
   "/:id",
   authentication,
@@ -55,6 +59,7 @@ router.put(
   asyncHandler(updateCategoryController),
 );
 
+// [DELETE] Delete category
 router.delete(
   "/:id",
   authentication,
@@ -63,8 +68,10 @@ router.delete(
   asyncHandler(deleteCategoryController),
 );
 
+// [GET] Public list categories
 router.get("/", asyncHandler(getPublicCategoriesController));
 
+// [GET] Public get category by slug
 router.get(
   "/:slug",
   validate(getCategoryBySlugSchema),

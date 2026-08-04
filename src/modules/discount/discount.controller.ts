@@ -5,17 +5,17 @@ import {
   ListDiscountsQuery,
 } from "./discount.validator.js";
 
+// [POST] Create discount code
 export const createDiscountController: RequestHandler = async (req, res) => {
   await discountService.createDiscount(req.body);
 
   return res.status(201).json({
     status: "success",
-    data: {
-      message: "کد تخفیف با موفقیت ایجاد شد",
-    },
+    data: { message: "کد تخفیف با موفقیت ایجاد شد" },
   });
 };
 
+// [GET] List discount codes
 export const listDiscountsController: RequestHandler = async (req, res) => {
   const result = await discountService.listDiscounts(
     req.query as ListDiscountsQuery,
@@ -27,6 +27,7 @@ export const listDiscountsController: RequestHandler = async (req, res) => {
   });
 };
 
+// [PATCH] Toggle discount status
 export const toggleDiscountController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
   const discount = await discountService.toggleDiscount(id);
@@ -39,6 +40,7 @@ export const toggleDiscountController: RequestHandler = async (req, res) => {
   });
 };
 
+// [DELETE] Delete discount code
 export const deleteDiscountController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
   await discountService.deleteDiscount(id);
@@ -49,6 +51,7 @@ export const deleteDiscountController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Apply discount to cart
 export const applyDiscountController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await discountService.applyDiscountToCart(
@@ -62,6 +65,7 @@ export const applyDiscountController: RequestHandler = async (req, res) => {
   });
 };
 
+// [DELETE] Remove discount from cart
 export const removeDiscountController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const result = await discountService.removeDiscountFromCart(userId);

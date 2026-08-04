@@ -12,12 +12,14 @@ import {
   UpdateCategoryInput,
 } from "./category.validator.js";
 
+// [DB] Include total count of courses and posts
 const categoryWithCount = {
   _count: {
     select: { courses: true, posts: true },
   },
 };
 
+// [DB] Include count of published courses and posts only
 const categoryWithPublishedCount = {
   _count: {
     select: {
@@ -27,6 +29,7 @@ const categoryWithPublishedCount = {
   },
 };
 
+// [ERROR] Handle duplicate name (P2002)
 const handleUniqueError = (error: unknown): never => {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -40,6 +43,7 @@ const handleUniqueError = (error: unknown): never => {
 };
 
 export const categoryService = {
+  // [DB] Create new category
   async createCategory(data: CreateCategoryInput) {
     try {
       const category = await prisma.category.create({
@@ -57,6 +61,7 @@ export const categoryService = {
     }
   },
 
+  // [DB] Get all visible categories for public
   async getPublicCategories() {
     return prisma.category.findMany({
       where: { show: true },
@@ -65,6 +70,7 @@ export const categoryService = {
     });
   },
 
+  // [DB] Get paginated categories for admin
   async getAdminCategories(query: ListCategoriesAdminQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -74,6 +80,7 @@ export const categoryService = {
       where.show = query.show === "true";
     }
 
+    // [LOGIC] Apply search filter
     if (query.search) {
       where.OR = [
         { name: { contains: query.search, mode: "insensitive" } },
@@ -98,6 +105,7 @@ export const categoryService = {
     };
   },
 
+  // [DB] Get single category by slug (public)
   async getCategoryBySlug(slug: string) {
     const category = await prisma.category.findFirst({
       where: { slug, show: true },
@@ -111,6 +119,7 @@ export const categoryService = {
     return category;
   },
 
+  // [DB] Update category name or description
   async updateCategory(id: string, data: UpdateCategoryInput) {
     const existing = await prisma.category.findUnique({ where: { id } });
     if (!existing) {
@@ -119,6 +128,7 @@ export const categoryService = {
 
     const updateData: Prisma.CategoryUpdateInput = {};
 
+    // [LOGIC] Auto-generate slug on name change
     if (data.name !== undefined) {
       updateData.name = data.name;
       updateData.slug = createSlug(data.name);
@@ -139,6 +149,7 @@ export const categoryService = {
     }
   },
 
+  // [DB] Toggle category visibility and cascade to courses/posts
   async toggleVisibility(id: string, show: boolean) {
     return prisma.$transaction(async (tx) => {
       const existing = await tx.category.findUnique({ where: { id } });
@@ -147,6 +158,7 @@ export const categoryService = {
         throw new AppError("دسته بندی مورد نظر یافت نشد", 404);
       }
 
+      // [LOGIC] Prevent redundant toggle
       if (existing.show === show) {
         throw new AppError(
           show ? "دسته بندی از قبل فعال است" : "دسته بندی از قبل غیرفعال است",
@@ -159,6 +171,7 @@ export const categoryService = {
         data: { show },
       });
 
+      // [LOGIC] Unpublish related courses and posts on hide
       if (!show) {
         await tx.course.updateMany({
           where: { categoryId: id, published: true },
@@ -175,15 +188,13 @@ export const categoryService = {
     });
   },
 
+  // [DB] Delete category if no courses or posts exist
   async deleteCategory(id: string) {
     const existing = await prisma.category.findUnique({
       where: { id },
       include: {
         _count: {
-          select: {
-            courses: true,
-            posts: true,
-          },
+          select: { courses: true, posts: true },
         },
       },
     });
@@ -192,6 +203,7 @@ export const categoryService = {
       throw new AppError("دسته بندی مورد نظر یافت نشد", 404);
     }
 
+    // [LOGIC] Block delete if courses exist
     if (existing._count.courses > 0) {
       throw new AppError(
         `این دسته بندی ${existing._count.courses} دوره دارد. ابتدا دوره‌ها را حذف یا به دسته دیگری منتقل کنید`,
@@ -199,6 +211,7 @@ export const categoryService = {
       );
     }
 
+    // [LOGIC] Block delete if posts exist
     if (existing._count.posts > 0) {
       throw new AppError(
         `این دسته بندی ${existing._count.posts} مقاله دارد. ابتدا مقاله‌ها را حذف یا به دسته دیگری منتقل کنید`,
