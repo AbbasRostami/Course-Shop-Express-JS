@@ -1,5 +1,6 @@
 import { Prisma } from "../../../generated/prisma/client.js";
 
+// [DB] Order detail include - full item info
 export const orderDetailInclude = {
   items: {
     select: {
@@ -14,6 +15,7 @@ export const orderDetailInclude = {
   },
 } satisfies Prisma.OrderInclude;
 
+// [DB] Order list include - minimal item info
 export const orderListInclude = {
   items: {
     select: {
@@ -24,6 +26,7 @@ export const orderListInclude = {
   },
 } satisfies Prisma.OrderInclude;
 
+// [DB] Admin order include - with user info
 export const orderAdminInclude = {
   user: {
     select: {

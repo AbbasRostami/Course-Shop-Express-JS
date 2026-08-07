@@ -24,10 +24,13 @@ import {
 
 const router = Router();
 
+// [GET] ZarinPal payment callback (public - no auth)
 router.get("/verify", asyncHandler(verifyOrderController));
 
+// [MW] All routes below require auth
 router.use(authentication);
 
+// [GET] Admin list orders
 router.get(
   "/admin",
   authorize("ADMIN"),
@@ -35,6 +38,7 @@ router.get(
   asyncHandler(getAdminOrdersController),
 );
 
+// [GET] Admin get single order
 router.get(
   "/admin/:id",
   authorize("ADMIN"),
@@ -42,24 +46,30 @@ router.get(
   asyncHandler(getAdminOrderController),
 );
 
+// [GET] My orders list
 router.get(
   "/my-orders",
   validate(listOrdersSchema),
   asyncHandler(getMyOrdersController),
 );
 
+// [POST] Checkout with wallet
 router.post("/checkout/wallet", asyncHandler(checkoutWalletController));
 
+// [POST] Checkout with ZarinPal
 router.post("/checkout/zarinpal", asyncHandler(checkoutZarinpalController));
 
+// [GET] Get single order
 router.get("/:id", validate(getOrderSchema), asyncHandler(getOrderController));
 
+// [PATCH] Cancel order
 router.patch(
   "/:id/cancel",
   validate(cancelOrderSchema),
   asyncHandler(cancelOrderController),
 );
 
+// [PATCH] Admin cancel order
 router.patch(
   "/admin/:id/cancel",
   authorize("ADMIN"),

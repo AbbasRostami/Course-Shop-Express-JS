@@ -3,8 +3,10 @@ import { maskFields, maskItem } from "../../utils/mask.js";
 import { orderService } from "./order.service.js";
 import { ListAdminOrdersQuery, ListOrdersQuery } from "./order.validator.js";
 
+// [CONFIG] Frontend base URL for redirects
 const FRONTEND_URL = process.env.FRONTEND_URL!;
 
+// [POST] Checkout with wallet
 export const checkoutWalletController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
@@ -20,6 +22,7 @@ export const checkoutWalletController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Checkout with ZarinPal
 export const checkoutZarinpalController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
@@ -31,6 +34,7 @@ export const checkoutZarinpalController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Verify ZarinPal callback and redirect
 export const verifyOrderController: RequestHandler = async (req, res) => {
   const authority = req.query.Authority as string;
   const status = req.query.Status as string;
@@ -49,6 +53,7 @@ export const verifyOrderController: RequestHandler = async (req, res) => {
   );
 };
 
+// [GET] Get my orders list
 export const getMyOrdersController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
@@ -63,6 +68,7 @@ export const getMyOrdersController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Get single order
 export const getOrderController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const orderId = req.params.id as string;
@@ -75,6 +81,7 @@ export const getOrderController: RequestHandler = async (req, res) => {
   });
 };
 
+// [PATCH] Cancel order
 export const cancelOrderController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const orderId = req.params.id as string;
@@ -90,6 +97,7 @@ export const cancelOrderController: RequestHandler = async (req, res) => {
   });
 };
 
+// [PATCH] Admin cancel order
 export const adminCancelOrderController: RequestHandler = async (req, res) => {
   const orderId = req.params.id as string;
 
@@ -104,11 +112,13 @@ export const adminCancelOrderController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Admin list orders with masked email
 export const getAdminOrdersController: RequestHandler = async (req, res) => {
   const result = await orderService.getAdminOrders(
     req.query as ListAdminOrdersQuery,
   );
 
+  // [SECURITY] Mask user email in list
   const maskedItems = maskFields(result.items, ["user.email"]);
 
   return res.status(200).json({
@@ -120,10 +130,12 @@ export const getAdminOrdersController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Admin get single order with masked email
 export const getAdminOrderController: RequestHandler = async (req, res) => {
   const orderId = req.params.id as string;
   const order = await orderService.getAdminOrder(orderId);
 
+  // [SECURITY] Mask user email in detail
   const maskedOrder = maskItem(order, ["user.email"]);
 
   return res.status(200).json({

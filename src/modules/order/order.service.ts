@@ -18,6 +18,7 @@ import {
 } from "./order.types.js";
 import { ListAdminOrdersQuery, ListOrdersQuery } from "./order.validator.js";
 
+// [DB] Find order by ID and verify ownership
 const findUserOrder = async (orderId: string, userId: string) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -35,6 +36,7 @@ const findUserOrder = async (orderId: string, userId: string) => {
   return order;
 };
 
+// [DB] Find pending order - used before payment or cancel
 const findPendingOrder = async (orderId: string, userId: string) => {
   const order = await findUserOrder(orderId, userId);
 
@@ -48,6 +50,7 @@ const findPendingOrder = async (orderId: string, userId: string) => {
   return order;
 };
 
+// [DB] Batch create enrollments from order items
 const createEnrollments = async (
   userId: string,
   items: { courseId: string | null; price: number }[],
@@ -69,6 +72,7 @@ const createEnrollments = async (
   }
 };
 
+// [DB] Remove all items from user cart
 const clearCartItems = async (userId: string, tx: Prisma.TransactionClient) => {
   const cart = await tx.cart.findUnique({
     where: { userId },
@@ -76,12 +80,11 @@ const clearCartItems = async (userId: string, tx: Prisma.TransactionClient) => {
   });
 
   if (cart) {
-    await tx.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
+    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
   }
 };
 
+// [DB] Validate cart and build order from items
 const createOrderFromCart = async (
   userId: string,
   tx: Prisma.TransactionClient,
@@ -106,10 +109,12 @@ const createOrderFromCart = async (
   for (const item of cart.items) {
     const course = item.course;
 
+    // [LOGIC] Block unavailable courses
     if (!course.published || !course.category?.show) {
       throw new AppError(`دوره "${course.title}" دیگر در دسترس نیست`, 400);
     }
 
+    // [LOGIC] Block free courses in cart
     if (course.price === 0) {
       throw new AppError(
         `دوره رایگان "${course.title}" نباید در سبد خرید باشد`,
@@ -117,6 +122,7 @@ const createOrderFromCart = async (
       );
     }
 
+    // [DB] Check existing enrollment
     const enrolled = await tx.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId: course.id } },
     });
@@ -142,6 +148,7 @@ const createOrderFromCart = async (
   let discountAmount = 0;
   let discountCode: string | null = null;
 
+  // [LOGIC] Apply discount if valid
   if (cart.discountCode) {
     const discount = await tx.discount.findUnique({
       where: { code: cart.discountCode },
@@ -156,6 +163,7 @@ const createOrderFromCart = async (
       discountAmount = calculateDiscountAmount(subtotal, discount);
       discountCode = discount.code;
 
+      // [DB] Increment discount usage count
       await tx.discount.update({
         where: { id: discount.id },
         data: { usedCount: { increment: 1 } },
@@ -165,6 +173,7 @@ const createOrderFromCart = async (
 
   const totalAmount = subtotal - discountAmount;
 
+  // [DB] Create order with items
   const order = await tx.order.create({
     data: {
       userId,
@@ -190,13 +199,12 @@ const createOrderFromCart = async (
 };
 
 export const orderService = {
+  // [PAYMENT] Checkout with wallet balance
   async checkoutWithWallet(userId: string) {
     const result = await prisma.$transaction(async (tx) => {
       const order = await createOrderFromCart(userId, tx);
 
-      const wallet = await tx.wallet.findUnique({
-        where: { userId },
-      });
+      const wallet = await tx.wallet.findUnique({ where: { userId } });
 
       if (!wallet) {
         throw new AppError(
@@ -205,6 +213,7 @@ export const orderService = {
         );
       }
 
+      // [LOGIC] Check sufficient balance
       if (wallet.balance < order.totalAmount) {
         throw new AppError(
           `موجودی کیف پول کافی نیست. موجودی: ${wallet.balance.toLocaleString()} ریال — مبلغ سفارش: ${order.totalAmount.toLocaleString()} ریال`,
@@ -212,11 +221,13 @@ export const orderService = {
         );
       }
 
+      // [DB] Deduct from wallet
       const updatedWallet = await tx.wallet.update({
         where: { userId },
         data: { balance: { decrement: order.totalAmount } },
       });
 
+      // [DB] Create wallet transaction record
       await tx.transaction.create({
         data: {
           amount: order.totalAmount,
@@ -228,29 +239,25 @@ export const orderService = {
         },
       });
 
+      // [DB] Mark order as paid
       const paidOrder = await tx.order.update({
         where: { id: order.id },
-        data: {
-          status: "PAID",
-          paymentMethod: "WALLET",
-        },
+        data: { status: "PAID", paymentMethod: "WALLET" },
         include: orderDetailInclude,
       });
 
       await createEnrollments(userId, order.items, tx);
-
       await clearCartItems(userId, tx);
 
-      return {
-        order: paidOrder,
-        newBalance: updatedWallet.balance,
-      };
+      return { order: paidOrder, newBalance: updatedWallet.balance };
     });
 
     return result;
   },
 
+  // [PAYMENT] Checkout with ZarinPal gateway
   async checkoutWithZarinpal(userId: string) {
+    // [DB] Create pending order
     const order = await prisma.$transaction(async (tx) => {
       return createOrderFromCart(userId, tx);
     });
@@ -265,6 +272,7 @@ export const orderService = {
       throw new AppError("BACKEND_URL در محیط تعریف نشده است", 500);
     }
 
+    // [PAYMENT] Request authority from ZarinPal
     const zarinpalResult = await requestPayment({
       amount: order.totalAmount,
       description: `پرداخت سفارش #${order.id.slice(0, 8)}`,
@@ -274,6 +282,7 @@ export const orderService = {
       orderId: order.id,
     });
 
+    // [ERROR] Cancel order if gateway fails
     if (!zarinpalResult.success || !zarinpalResult.authority) {
       await prisma.order.update({
         where: { id: order.id },
@@ -286,6 +295,7 @@ export const orderService = {
       );
     }
 
+    // [DB] Store pending transaction with authority
     await prisma.transaction.create({
       data: {
         amount: order.totalAmount,
@@ -304,6 +314,7 @@ export const orderService = {
     };
   },
 
+  // [PAYMENT] Verify ZarinPal callback
   async verifyZarinpal(authority: string, status: string) {
     const transaction = await prisma.transaction.findUnique({
       where: { authority },
@@ -313,6 +324,7 @@ export const orderService = {
       throw new AppError("تراکنش یافت نشد", 404);
     }
 
+    // [LOGIC] Skip if already processed
     if (transaction.status !== "PENDING") {
       return {
         success: transaction.status === "SUCCESS",
@@ -321,6 +333,7 @@ export const orderService = {
       };
     }
 
+    // [LOGIC] User cancelled payment
     if (status === "NOK") {
       await prisma.$transaction(async (tx) => {
         await tx.transaction.update({
@@ -343,6 +356,7 @@ export const orderService = {
       };
     }
 
+    // [PAYMENT] Verify with ZarinPal
     const verifyResult = await zarinpalVerify({
       authority,
       amount: transaction.amount,
@@ -361,31 +375,23 @@ export const orderService = {
       };
     }
 
+    // [DB] Finalize payment - update transaction, order, enrollments
     const result = await prisma.$transaction(async (tx) => {
       await tx.transaction.update({
         where: { id: transaction.id },
-        data: {
-          status: "SUCCESS",
-          refId: verifyResult.refId,
-        },
+        data: { status: "SUCCESS", refId: verifyResult.refId },
       });
 
       const order = await tx.order.update({
         where: { id: transaction.orderId! },
-        data: {
-          status: "PAID",
-          paymentMethod: "ZARINPAL",
-        },
+        data: { status: "PAID", paymentMethod: "ZARINPAL" },
         include: orderDetailInclude,
       });
 
       await createEnrollments(transaction.userId, order.items, tx);
       await clearCartItems(transaction.userId, tx);
 
-      return {
-        order,
-        refId: verifyResult.refId,
-      };
+      return { order, refId: verifyResult.refId };
     });
 
     return {
@@ -395,6 +401,7 @@ export const orderService = {
     };
   },
 
+  // [DB] Get user's orders with pagination
   async getMyOrders(userId: string, query: ListOrdersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -421,10 +428,12 @@ export const orderService = {
     };
   },
 
+  // [DB] Get single order for user
   async getOrder(orderId: string, userId: string) {
     return findUserOrder(orderId, userId);
   },
 
+  // [DB] Cancel pending order by user
   async cancelOrder(orderId: string, userId: string) {
     await findPendingOrder(orderId, userId);
 
@@ -435,14 +444,10 @@ export const orderService = {
         include: orderDetailInclude,
       });
 
+      // [DB] Cancel related pending transactions
       await tx.transaction.updateMany({
-        where: {
-          orderId,
-          status: "PENDING",
-        },
-        data: {
-          status: "CANCELLED",
-        },
+        where: { orderId, status: "PENDING" },
+        data: { status: "CANCELLED" },
       });
 
       return updatedOrder;
@@ -451,6 +456,7 @@ export const orderService = {
     return cancelled;
   },
 
+  // [DB] Admin cancel order
   async adminCancelOrder(orderId: string) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -465,10 +471,10 @@ export const orderService = {
       throw new AppError("این سفارش قبلاً لغو شده است", 400);
     }
 
+    // [LOGIC] Block cancellation of paid orders
     if (order.status === "PAID") {
       throw new AppError(
         "امکان لغو سفارش پرداخت شده وجود ندارد.",
-        //  "امکان لغو سفارش پرداخت شده وجود ندارد. برای این کار نیاز به بازپرداخت (Refund) دارید",
         400,
       );
     }
@@ -480,14 +486,10 @@ export const orderService = {
         include: orderAdminInclude,
       });
 
+      // [DB] Cancel related pending transactions
       await tx.transaction.updateMany({
-        where: {
-          orderId,
-          status: "PENDING",
-        },
-        data: {
-          status: "CANCELLED",
-        },
+        where: { orderId, status: "PENDING" },
+        data: { status: "CANCELLED" },
       });
 
       return updatedOrder;
@@ -496,15 +498,15 @@ export const orderService = {
     return cancelled;
   },
 
+  // [DB] Admin get all orders with filters
   async getAdminOrders(query: ListAdminOrdersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.OrderWhereInput = {};
 
-    if (query.status) {
-      where.status = query.status;
-    }
+    if (query.status) where.status = query.status;
 
+    // [LOGIC] Search by user email or name
     if (query.search) {
       where.user = {
         OR: [
@@ -531,6 +533,7 @@ export const orderService = {
     };
   },
 
+  // [DB] Admin get single order by ID
   async getAdminOrder(orderId: string) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
