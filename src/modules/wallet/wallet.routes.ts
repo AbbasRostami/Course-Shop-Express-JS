@@ -20,6 +20,7 @@ import {
 
 const router = Router();
 
+// [GET] Admin list all wallets
 router.get(
   "/admin/wallets",
   authentication,
@@ -28,6 +29,7 @@ router.get(
   asyncHandler(getAllWalletsController),
 );
 
+// [GET] Admin list all transactions
 router.get(
   "/admin/transactions",
   authentication,
@@ -36,8 +38,10 @@ router.get(
   asyncHandler(getAllTransactionsController),
 );
 
+// [GET] Get wallet balance
 router.get("/", authentication, asyncHandler(getWalletBalanceController));
 
+// [POST] Charge wallet via ZarinPal
 router.post(
   "/charge",
   authentication,
@@ -45,8 +49,10 @@ router.post(
   asyncHandler(chargeWalletController),
 );
 
+// [GET] ZarinPal payment callback (public)
 router.get("/verify", asyncHandler(verifyPaymentController));
 
+// [GET] Get user transactions
 router.get(
   "/transactions",
   authentication,

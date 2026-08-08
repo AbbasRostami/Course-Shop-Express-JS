@@ -16,6 +16,7 @@ import {
   ListWalletsAdminQuery,
 } from "./wallet.validator.js";
 
+// [DB] Wallet include with user info
 const walletWithUser = {
   user: {
     select: {
@@ -27,6 +28,7 @@ const walletWithUser = {
   },
 };
 
+// [DB] Transaction include with user and course
 const transactionWithUser = {
   user: {
     select: {
@@ -45,6 +47,7 @@ const transactionWithUser = {
 };
 
 export const walletService = {
+  // [DB] Get or create wallet for user
   async getOrCreateWallet(userId: string) {
     return prisma.wallet.upsert({
       where: { userId },
@@ -53,11 +56,13 @@ export const walletService = {
     });
   },
 
+  // [DB] Get wallet balance
   async getWalletBalance(userId: string) {
     const wallet = await this.getOrCreateWallet(userId);
     return wallet;
   },
 
+  // [PAYMENT] Initiate wallet charge via ZarinPal
   async chargeWallet(userId: string, data: ChargeWalletInput) {
     const backendUrl = process.env.BACKEND_URL;
     if (!backendUrl) {
@@ -76,6 +81,7 @@ export const walletService = {
       throw new AppError("کاربر یافت نشد", 404);
     }
 
+    // [PAYMENT] Request authority from ZarinPal
     const zarinpalResult = await requestPayment({
       amount: data.amount,
       description: `شارژ کیف پول به مبلغ ${data.amount} ریال`,
@@ -91,6 +97,7 @@ export const walletService = {
       );
     }
 
+    // [DB] Store pending transaction
     const transaction = await prisma.transaction.create({
       data: {
         amount: data.amount,
@@ -109,6 +116,7 @@ export const walletService = {
     };
   },
 
+  // [PAYMENT] Verify ZarinPal callback and credit wallet
   async verifyPayment(authority: string, status: string) {
     const transaction = await prisma.transaction.findUnique({
       where: { authority },
@@ -124,19 +132,20 @@ export const walletService = {
       };
     }
 
+    // [LOGIC] Skip if already processed
     if (transaction.status !== "PENDING") {
       return {
         success: transaction.status === "SUCCESS",
-        reason:
-          transaction.status !== "SUCCESS"
-            ? "تراکنش قبلاً پردازش شده است"
-            : undefined,
+        reason: transaction.status !== "SUCCESS"
+          ? "تراکنش قبلاً پردازش شده است"
+          : undefined,
         transaction,
         newBalance: null,
         refId: null,
       };
     }
 
+    // [LOGIC] User cancelled payment
     if (status === "NOK") {
       await prisma.transaction.update({
         where: { id: transaction.id },
@@ -152,6 +161,7 @@ export const walletService = {
       };
     }
 
+    // [PAYMENT] Verify with ZarinPal
     const verifyResult = await zarinpalVerify({
       authority,
       amount: transaction.amount,
@@ -172,13 +182,11 @@ export const walletService = {
       };
     }
 
+    // [DB] Finalize - update transaction and credit wallet
     const result = await prisma.$transaction(async (tx) => {
       const updatedTransaction = await tx.transaction.update({
         where: { id: transaction.id },
-        data: {
-          status: "SUCCESS",
-          refId: verifyResult.refId,
-        },
+        data: { status: "SUCCESS", refId: verifyResult.refId },
       });
 
       const updatedWallet = await tx.wallet.update({
@@ -198,6 +206,7 @@ export const walletService = {
     };
   },
 
+  // [DB] Get user transactions with filters
   async getUserTransactions(userId: string, query: ListUserTransactionsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -213,9 +222,7 @@ export const walletService = {
         take,
         orderBy: { createdAt: "desc" },
         include: {
-          course: {
-            select: { id: true, title: true, slug: true },
-          },
+          course: { select: { id: true, title: true, slug: true } },
         },
       }),
       prisma.transaction.count({ where }),
@@ -227,17 +234,20 @@ export const walletService = {
     };
   },
 
+  // [DB] Admin get all wallets with filters
   async getAllWallets(query: ListWalletsAdminQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.WalletWhereInput = {};
 
+    // [LOGIC] Balance range filter
     if (query.minBalance || query.maxBalance) {
       where.balance = {};
       if (query.minBalance) where.balance.gte = Number(query.minBalance);
       if (query.maxBalance) where.balance.lte = Number(query.maxBalance);
     }
 
+    // [LOGIC] Search by user email or name
     if (query.search) {
       where.user = {
         OR: [
@@ -264,6 +274,7 @@ export const walletService = {
     };
   },
 
+  // [DB] Admin get all transactions with filters
   async getAllTransactions(query: ListAdminTransactionsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -272,6 +283,7 @@ export const walletService = {
     if (query.status) where.status = query.status;
     if (query.type) where.type = query.type;
 
+    // [LOGIC] Date range filter
     if (query.startDate || query.endDate) {
       where.createdAt = {};
       if (query.startDate) where.createdAt.gte = new Date(query.startDate);

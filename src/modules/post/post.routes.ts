@@ -27,8 +27,7 @@ import {
 
 const router = Router();
 
-// ─── Admin mutations
-
+// [GET] Admin list posts
 router.get(
   "/admin",
   authentication,
@@ -37,6 +36,7 @@ router.get(
   asyncHandler(getAdminPostsController),
 );
 
+// [POST] Create post with image upload
 router.post(
   "/",
   authentication,
@@ -46,6 +46,7 @@ router.post(
   asyncHandler(createPostController),
 );
 
+// [PUT] Update post with optional image upload
 router.put(
   "/:id",
   authentication,
@@ -55,6 +56,7 @@ router.put(
   asyncHandler(updatePostController),
 );
 
+// [PATCH] Toggle post publish status
 router.patch(
   "/:id/publish",
   authentication,
@@ -63,6 +65,7 @@ router.patch(
   asyncHandler(togglePublishPostController),
 );
 
+// [DELETE] Delete post
 router.delete(
   "/:id",
   authentication,
@@ -71,20 +74,21 @@ router.delete(
   asyncHandler(deletePostController),
 );
 
-// ─── Public routes
+// [GET] Public list posts
 router.get(
   "/",
   validate(listPostsPublicSchema),
   asyncHandler(getPublicPostsController),
 );
 
+// [GET] Get post by slug
 router.get(
   "/:slug",
   validate(getPostBySlugSchema),
   asyncHandler(getPostBySlugController),
 );
 
-// ─── User routes
+// [POST] Toggle reaction on post
 router.post(
   "/:id/reaction",
   authentication,

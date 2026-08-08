@@ -22,37 +22,29 @@ import {
 } from "./post.types.js";
 import { ListPostsAdminQuery, ListPostsPublicQuery } from "./post.validator.js";
 
+// [UTIL] Format post - replace _count with stats
 const formatPost = (post: PostWithRelations): PostWithStats => {
   const { _count, categoryId, ...rest } = post;
-  return {
-    ...rest,
-    stats: {
-      comments: _count.comments,
-    },
-  };
+  return { ...rest, stats: { comments: _count.comments } };
 };
 
+// [UTIL] Format post list
 const formatPosts = (posts: PostWithRelations[]): PostWithStats[] =>
   posts.map(formatPost);
 
+// [DB] Check if user favorited a single post
 const addFavoriteInfo = async (post: PostWithStats, userId?: string) => {
-  if (!userId) {
-    return { ...post, isFavorite: false };
-  }
+  if (!userId) return { ...post, isFavorite: false };
 
   const favorite = await prisma.blogFavorite.findUnique({
-    where: {
-      userId_postId: { userId, postId: post.id },
-    },
+    where: { userId_postId: { userId, postId: post.id } },
     select: { id: true },
   });
 
-  return {
-    ...post,
-    isFavorite: !!favorite,
-  };
+  return { ...post, isFavorite: !!favorite };
 };
 
+// [DB] Batch check favorites for a list of posts
 const addFavoriteInfoToList = async (posts: any[], userId?: string) => {
   if (!userId || posts.length === 0) {
     return posts.map((p) => ({ ...p, isFavorite: false }));
@@ -74,6 +66,7 @@ const addFavoriteInfoToList = async (posts: any[], userId?: string) => {
   }));
 };
 
+// [ERROR] Handle duplicate title (P2002)
 const handleUniqueError = (error: unknown): never => {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -86,10 +79,9 @@ const handleUniqueError = (error: unknown): never => {
   throw error;
 };
 
+// [DB] Validate category exists
 const validateCategoryExists = async (categoryId: string) => {
-  const category = await prisma.category.findUnique({
-    where: { id: categoryId },
-  });
+  const category = await prisma.category.findUnique({ where: { id: categoryId } });
 
   if (!category) {
     throw new AppError("دسته‌بندی مورد نظر یافت نشد", 400, {
@@ -99,6 +91,7 @@ const validateCategoryExists = async (categoryId: string) => {
 };
 
 export const postService = {
+  // [DB] Create new post with sanitized content
   async createPost(data: CreatePostInputWithImage) {
     await validateCategoryExists(data.categoryId);
 
@@ -117,6 +110,7 @@ export const postService = {
 
       return formatPost(post);
     } catch (error) {
+      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -125,10 +119,12 @@ export const postService = {
     }
   },
 
+  // [DB] Update existing post
   async updatePost(id: string, data: UpdatePostInputWithImage) {
     const existing = await prisma.post.findUnique({ where: { id } });
 
     if (!existing) {
+      // [CLEANUP] Remove uploaded image if post not found
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -141,6 +137,7 @@ export const postService = {
 
     const updateData: Prisma.PostUpdateInput = {};
 
+    // [LOGIC] Auto-generate slug on title change
     if (data.title !== undefined) {
       updateData.title = data.title;
       updateData.slug = createSlug(data.title);
@@ -151,12 +148,8 @@ export const postService = {
     if (data.categoryId !== undefined) {
       updateData.category = { connect: { id: data.categoryId } };
     }
-    if (data.published !== undefined) {
-      updateData.published = data.published;
-    }
-    if (data.imageUrl) {
-      updateData.imageUrl = data.imageUrl;
-    }
+    if (data.published !== undefined) updateData.published = data.published;
+    if (data.imageUrl) updateData.imageUrl = data.imageUrl;
 
     try {
       const post = await prisma.post.update({
@@ -165,12 +158,14 @@ export const postService = {
         include: postInclude,
       });
 
+      // [CLEANUP] Remove old image after successful update
       if (data.imageUrl && existing.imageUrl) {
         await removeCloudinaryImage(existing.imageUrl);
       }
 
       return formatPost(post);
     } catch (error) {
+      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -179,6 +174,7 @@ export const postService = {
     }
   },
 
+  // [DB] Toggle post publish status
   async togglePublish(id: string, published: boolean) {
     const existing = await prisma.post.findUnique({
       where: { id },
@@ -189,6 +185,7 @@ export const postService = {
       throw new AppError("پست مورد نظر یافت نشد", 404);
     }
 
+    // [LOGIC] Prevent redundant toggle
     if (existing.published === published) {
       throw new AppError(
         published ? "پست از قبل منتشر شده است" : "پست از قبل پنهان است",
@@ -196,6 +193,7 @@ export const postService = {
       );
     }
 
+    // [LOGIC] Block publish if category is hidden
     if (published && !existing.category.show) {
       throw new AppError(
         "نمی‌توان پست را منتشر کرد چون دسته‌بندی آن غیرفعال است",
@@ -212,6 +210,7 @@ export const postService = {
     return formatPost(post);
   },
 
+  // [DB] Delete post and remove image
   async deletePost(id: string) {
     const existing = await prisma.post.findUnique({ where: { id } });
 
@@ -221,11 +220,13 @@ export const postService = {
 
     await prisma.post.delete({ where: { id } });
 
+    // [CLEANUP] Remove image from Cloudinary
     if (existing.imageUrl) {
       await removeCloudinaryImage(existing.imageUrl);
     }
   },
 
+  // [DB] Admin get all posts with filters
   async getAdminPosts(query: ListPostsAdminQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -247,13 +248,7 @@ export const postService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: postInclude,
-      }),
+      prisma.post.findMany({ where, skip, take, orderBy, include: postInclude }),
       prisma.post.count({ where }),
     ]);
 
@@ -263,6 +258,7 @@ export const postService = {
     };
   },
 
+  // [DB] Public list posts with reactions and favorites
   async getPublicPosts(query: ListPostsPublicQuery, userId?: string) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -291,23 +287,15 @@ export const postService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: postInclude,
-      }),
+      prisma.post.findMany({ where, skip, take, orderBy, include: postInclude }),
       prisma.post.count({ where }),
     ]);
 
     const formattedPosts = formatPosts(items);
     const postIds = formattedPosts.map((p) => p.id);
-    const reactionMap = await getReactionCountsForList(
-      "postId",
-      postIds,
-      userId,
-    );
+
+    // [DB] Attach reactions per post
+    const reactionMap = await getReactionCountsForList("postId", postIds, userId);
 
     const postsWithReactions = formattedPosts.map((post) => ({
       ...post,
@@ -318,6 +306,7 @@ export const postService = {
       },
     }));
 
+    // [DB] Attach favorite status per post
     const finalItems = await addFavoriteInfoToList(postsWithReactions, userId);
 
     return {
@@ -326,6 +315,7 @@ export const postService = {
     };
   },
 
+  // [DB] Get single post by slug with reactions and favorite
   async getPostBySlug(slug: string, userId?: string) {
     const post = await prisma.post.findFirst({
       where: {
@@ -342,6 +332,7 @@ export const postService = {
 
     const formattedPost = formatPost(post);
 
+    // [DB] Load reactions in parallel
     const [counts, myReaction] = await Promise.all([
       getReactionCounts("postId", post.id),
       getMyReaction("postId", post.id, userId),

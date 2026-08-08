@@ -7,11 +7,12 @@ import {
   ListWalletsAdminQuery,
 } from "./wallet.validator.js";
 
+// [CONFIG] Frontend base URL for redirects
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+// [GET] Get wallet balance
 export const getWalletBalanceController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
-
   const wallet = await walletService.getWalletBalance(userId);
 
   return res.status(200).json({
@@ -20,9 +21,9 @@ export const getWalletBalanceController: RequestHandler = async (req, res) => {
   });
 };
 
+// [POST] Charge wallet - returns ZarinPal payment URL
 export const chargeWalletController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
-
   const result = await walletService.chargeWallet(userId, req.body);
 
   return res.status(200).json({
@@ -36,14 +37,13 @@ export const chargeWalletController: RequestHandler = async (req, res) => {
   });
 };
 
+// [GET] Verify ZarinPal callback and redirect
 export const verifyPaymentController: RequestHandler = async (req, res) => {
   const Authority = req.query.Authority as string;
   const Status = req.query.Status as string;
 
   if (!Authority || !Status) {
-    return res.redirect(
-      `${FRONTEND_URL}/payment/failed?reason=invalid_callback`,
-    );
+    return res.redirect(`${FRONTEND_URL}/payment/failed?reason=invalid_callback`);
   }
 
   const result = await walletService.verifyPayment(Authority, Status);
@@ -69,10 +69,8 @@ export const verifyPaymentController: RequestHandler = async (req, res) => {
   return res.redirect(`${FRONTEND_URL}/payment/failed?${params.toString()}`);
 };
 
-export const getUserTransactionsController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [GET] Get user transactions list
+export const getUserTransactionsController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
   const result = await walletService.getUserTransactions(
@@ -86,37 +84,30 @@ export const getUserTransactionsController: RequestHandler = async (
   });
 };
 
+// [GET] Admin list all wallets with masked fields
 export const getAllWalletsController: RequestHandler = async (req, res) => {
-  const result = await walletService.getAllWallets(
-    req.query as ListWalletsAdminQuery,
-  );
+  const result = await walletService.getAllWallets(req.query as ListWalletsAdminQuery);
 
+  // [SECURITY] Mask email and phone in wallet list
   const maskedItems = maskFields(result.items, ["user.email", "user.phone"]);
 
   return res.status(200).json({
     status: "success",
-    data: {
-      ...result,
-      items: maskedItems,
-    },
+    data: { ...result, items: maskedItems },
   });
 };
 
-export const getAllTransactionsController: RequestHandler = async (
-  req,
-  res,
-) => {
+// [GET] Admin list all transactions with masked email
+export const getAllTransactionsController: RequestHandler = async (req, res) => {
   const result = await walletService.getAllTransactions(
     req.query as ListAdminTransactionsQuery,
   );
 
+  // [SECURITY] Mask user email in transaction list
   const maskedItems = maskFields(result.items, ["user.email"]);
 
   return res.status(200).json({
     status: "success",
-    data: {
-      ...result,
-      items: maskedItems,
-    },
+    data: { ...result, items: maskedItems },
   });
 };
