@@ -27,21 +27,21 @@ import walletRoutes from "./modules/wallet/wallet.routes.js";
 
 const app = express();
 
-// ─── Trust proxy
+// [CONFIG] Trust reverse proxy
 app.set("trust proxy", 1);
 
-// ─── Logging
+// [MW] HTTP request logger
 const morganFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
 app.use(morgan(morganFormat));
 
-// ─── Security
+// [MW] Security headers
 app.use(
   helmet({
     contentSecurityPolicy: false,
   }),
 );
 
-// ─── CORS
+// [CONFIG] Allowed CORS origins
 const allowedOrigins = [
   process.env.BACKEND_URL,
   process.env.FRONTEND_URL,
@@ -53,7 +53,6 @@ const corsOptions: CorsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-
     return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
@@ -67,17 +66,18 @@ const corsOptions: CorsOptions = {
   ],
 };
 
+// [MW] CORS
 app.use(cors(corsOptions));
 
-// ─── Body parser
+// [MW] Cookie, JSON, URL parsers
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// ─── Static files
+// [MW] Static files
 app.use(express.static("public"));
 
-// ─── Rate limiting (global)
+// [RATE] Global API rate limiter
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 100,
@@ -93,7 +93,7 @@ const globalLimiter = rateLimit({
 });
 app.use("/api", globalLimiter);
 
-// ─── Swagger
+// [SWAGGER] API documentation UI
 app.use(
   "/api-docs",
   swaggerUi.serve,
@@ -107,10 +107,10 @@ app.use(
   }),
 );
 
-// ─── Health check
+// [ROUTE] Health check
 app.use("/health", healthRoutes);
 
-// ─── API Routes
+// [ROUTE] API modules
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -128,17 +128,19 @@ app.use("/api/overview", overviewRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/teachers", teacherRoutes);
 
+// [TEST] Manual 500 error for Telegram alert testing
 if (process.env.ENABLE_TEST_ROUTES === "true") {
   app.get("/test-500", (_req, _res, next) => {
     next(new Error("Manual test 500 error for Telegram notification"));
   });
 }
 
+// [ROUTE] Expose raw swagger JSON
 app.get("/swagger.json", (_req, res) => {
   res.json(swaggerSpec);
 });
 
-// ─── 404 Handler
+// [ERROR] 404 handler
 app.use((req, res) => {
   res.status(404).json({
     status: "fail",
@@ -148,7 +150,7 @@ app.use((req, res) => {
   });
 });
 
-// ─── Global Error Handler
+// [ERROR] Global error handler
 app.use(errorHandler);
 
 export default app;
