@@ -25,20 +25,27 @@ import {
 
 const router = Router();
 
+// [MW] All user routes require auth
 router.use(authentication);
 
-// ─── User Profile
+// [GET] Profile overview
 router.get("/profile/overview", asyncHandler(getProfileOverviewController));
+
+// [GET] Get profile
 router.get("/profile", asyncHandler(getProfileController));
+
+// [PUT] Update profile with optional avatar upload
 router.put(
   "/profile",
   uploadAvatar,
   validate(updateProfileSchema),
   asyncHandler(updateProfileController),
 );
+
+// [DELETE] Remove avatar
 router.delete("/profile/avatar", asyncHandler(deleteAvatarController));
 
-// ─── Admin: User Management
+// [GET] Admin list users
 router.get(
   "/",
   authorize("ADMIN"),
@@ -46,6 +53,7 @@ router.get(
   asyncHandler(getUsersController),
 );
 
+// [GET] Admin list banned users
 router.get(
   "/blacklist",
   authorize("ADMIN"),
@@ -53,6 +61,7 @@ router.get(
   asyncHandler(getBannedUsersController),
 );
 
+// [GET] Admin get user by ID
 router.get(
   "/:id",
   authorize("ADMIN"),
@@ -60,6 +69,7 @@ router.get(
   asyncHandler(getUserByIdController),
 );
 
+// [POST] Admin ban user
 router.post(
   "/:id/ban",
   authorize("ADMIN"),
@@ -67,6 +77,7 @@ router.post(
   asyncHandler(banUserController),
 );
 
+// [DELETE] Admin unban user
 router.delete(
   "/:id/ban",
   authorize("ADMIN"),

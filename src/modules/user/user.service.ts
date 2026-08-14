@@ -13,6 +13,7 @@ import {
 } from "./user.validator.js";
 
 export const userService = {
+  // [DB] Get current user profile
   async getProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -31,13 +32,16 @@ export const userService = {
     if (!user) {
       throw new AppError("کاربر مورد نظر یافت نشد", 404);
     }
+
     return user;
   },
 
+  // [DB] Update user profile with optional avatar
   async updateProfile(
     userId: string,
     data: UpdateProfileInput & { avatar?: string },
   ) {
+    // [CLEANUP] Remove old avatar before setting new one
     if (data.avatar) {
       const currentUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -48,6 +52,7 @@ export const userService = {
         await removeCloudinaryImage(currentUser.avatar);
       }
     }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data,
@@ -64,12 +69,14 @@ export const userService = {
     return updatedUser;
   },
 
+  // [DB] Remove user avatar
   async deleteAvatar(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { avatar: true },
     });
 
+    // [CLEANUP] Remove image from Cloudinary
     if (user?.avatar) {
       await removeCloudinaryImage(user.avatar);
     }
@@ -81,6 +88,7 @@ export const userService = {
     });
   },
 
+  // [DB] Get user activity overview
   async getProfileOverview(userId: string) {
     const [
       enrollments,
@@ -105,9 +113,7 @@ export const userService = {
       prisma.comment.count({ where: { userId, status: "PENDING" } }),
       prisma.courseFavorite.count({ where: { userId } }),
       prisma.blogFavorite.count({ where: { userId } }),
-      prisma.cartItem.count({
-        where: { cart: { userId } },
-      }),
+      prisma.cartItem.count({ where: { cart: { userId } } }),
       prisma.reaction.count({ where: { userId } }),
     ]);
 
@@ -122,28 +128,21 @@ export const userService = {
     };
   },
 
+  // [DB] Admin get paginated users with filters
   async getUsers(query: ListUsersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.UserWhereInput = {};
 
-    if (query.role) {
-      where.role = query.role;
-    }
-
-    if (query.isVerified !== undefined) {
-      where.isVerified = query.isVerified === "true";
-    }
+    if (query.role) where.role = query.role;
+    if (query.isVerified !== undefined) where.isVerified = query.isVerified === "true";
+    if (query.isBanned !== undefined) where.isBanned = query.isBanned === "true";
 
     if (query.search) {
       where.OR = [
         { name: { contains: query.search, mode: "insensitive" } },
         { email: { contains: query.search, mode: "insensitive" } },
       ];
-    }
-
-    if (query.isBanned !== undefined) {
-      where.isBanned = query.isBanned === "true";
     }
 
     const sortBy = query.sortBy || "createdAt";
@@ -176,6 +175,7 @@ export const userService = {
       prisma.user.count({ where }),
     ]);
 
+    // [UTIL] Flatten _count into stats
     const formattedItems = items.map(({ _count, ...user }) => ({
       ...user,
       stats: {
@@ -191,6 +191,7 @@ export const userService = {
     };
   },
 
+  // [DB] Admin get single user with stats
   async getUserById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -204,9 +205,7 @@ export const userService = {
         isVerified: true,
         createdAt: true,
         updatedAt: true,
-        wallet: {
-          select: { balance: true },
-        },
+        wallet: { select: { balance: true } },
         _count: {
           select: {
             enrollments: true,
@@ -229,6 +228,7 @@ export const userService = {
     return {
       ...rest,
       walletBalance: wallet?.balance ?? 0,
+      // [UTIL] Flatten _count into stats
       stats: {
         enrollments: _count.enrollments,
         orders: _count.orders,
@@ -240,6 +240,7 @@ export const userService = {
     };
   },
 
+  // [DB] Admin get paginated banned users
   async getBannedUsers(query: ListBannedUsersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -268,7 +269,9 @@ export const userService = {
     };
   },
 
+  // [DB] Admin ban user and invalidate session
   async banUser(id: string, currentUserId: string) {
+    // [LOGIC] Block self-ban
     if (id === currentUserId) {
       throw new AppError("نمی‌توانید خودتان را مسدود کنید", 400);
     }
@@ -279,6 +282,7 @@ export const userService = {
       throw new AppError("کاربر یافت نشد", 404);
     }
 
+    // [LOGIC] Block banning admin
     if (user.role === "ADMIN") {
       throw new AppError("امکان مسدود کردن ادمین وجود ندارد", 409);
     }
@@ -304,6 +308,7 @@ export const userService = {
     });
   },
 
+  // [DB] Admin unban user
   async unbanUser(id: string) {
     const user = await prisma.user.findUnique({ where: { id } });
 
@@ -317,10 +322,7 @@ export const userService = {
 
     return prisma.user.update({
       where: { id },
-      data: {
-        isBanned: false,
-        bannedAt: null,
-      },
+      data: { isBanned: false, bannedAt: null },
       select: {
         id: true,
         email: true,
