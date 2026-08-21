@@ -6,6 +6,7 @@ import {
 import { reactionService } from "./reaction.service.js";
 import { ToggleReactionBody } from "./reaction.validator.js";
 
+// [UTIL] Factory to create reaction controller for any target type
 const createToggleController = (targetType: ReactionTarget): RequestHandler => {
   return async (req, res) => {
     const userId = req.user!.id;
@@ -26,6 +27,11 @@ const createToggleController = (targetType: ReactionTarget): RequestHandler => {
   };
 };
 
+// [POST] Toggle course reaction
 export const toggleCourseReaction = createToggleController("COURSE");
+
+// [POST] Toggle post reaction
 export const togglePostReaction = createToggleController("POST");
+
+// [POST] Toggle comment reaction
 export const toggleCommentReaction = createToggleController("COMMENT");
