@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// [VALID] Search query schema
 export const searchSchema = z.object({
   query: z.object({
     q: z

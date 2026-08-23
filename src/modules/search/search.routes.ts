@@ -6,6 +6,7 @@ import { searchSchema } from "./search.validator.js";
 
 const router = Router();
 
+// [GET] Search courses and posts
 router.get("/", validate(searchSchema), asyncHandler(searchController));
 
 export default router;
