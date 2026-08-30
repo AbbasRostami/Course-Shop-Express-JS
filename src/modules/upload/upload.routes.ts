@@ -7,6 +7,7 @@ import { uploadEditorImageController } from "./upload.controller.js";
 
 const router = Router();
 
+// [POST] Upload editor image (admin only)
 router.post(
   "/editor-image",
   authentication,
