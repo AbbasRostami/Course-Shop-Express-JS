@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// [VALID] Create teacher schema
 export const createTeacherSchema = z.object({
   body: z.object({
     name: z
@@ -15,6 +16,7 @@ export const createTeacherSchema = z.object({
   }),
 });
 
+// [VALID] Update teacher schema
 export const updateTeacherSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
@@ -35,18 +37,21 @@ export const updateTeacherSchema = z.object({
   }),
 });
 
+// [VALID] Delete teacher schema
 export const deleteTeacherSchema = z.object({
   params: z.object({
     id: z.string().uuid("شناسه نامعتبر است"),
   }),
 });
 
+// [VALID] Get teacher by slug schema
 export const getTeacherBySlugSchema = z.object({
   params: z.object({
     slug: z.string().min(1).max(200),
   }),
 });
 
+// [VALID] List teachers schema
 export const listTeachersSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/).optional(),

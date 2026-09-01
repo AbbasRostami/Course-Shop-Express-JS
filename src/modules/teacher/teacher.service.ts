@@ -13,6 +13,7 @@ import {
   UpdateTeacherInput,
 } from "./teacher.validator.js";
 
+// [DB] Base teacher select fields
 const teacherSelect = {
   id: true,
   name: true,
@@ -24,6 +25,7 @@ const teacherSelect = {
 } satisfies Prisma.TeacherSelect;
 
 export const teacherService = {
+  // [DB] Create new teacher
   async createTeacher(data: CreateTeacherInput & { avatar?: string }) {
     try {
       const teacher = await prisma.teacher.create({
@@ -38,10 +40,12 @@ export const teacherService = {
 
       return teacher;
     } catch (error) {
+      // [CLEANUP] Remove uploaded avatar on failure
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
 
+      // [ERROR] Handle duplicate name
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
@@ -55,6 +59,7 @@ export const teacherService = {
     }
   },
 
+  // [DB] Update existing teacher
   async updateTeacher(
     id: string,
     data: UpdateTeacherInput & { avatar?: string },
@@ -66,6 +71,7 @@ export const teacherService = {
     const existing = await prisma.teacher.findUnique({ where: { id } });
 
     if (!existing) {
+      // [CLEANUP] Remove uploaded avatar if teacher not found
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
@@ -74,16 +80,16 @@ export const teacherService = {
 
     const updateData: Prisma.TeacherUpdateInput = {};
 
+    // [LOGIC] Auto-generate slug on name change
     if (data.name !== undefined) {
       updateData.name = data.name;
       updateData.slug = createSlug(data.name);
     }
 
-    if (data.bio !== undefined) {
-      updateData.bio = data.bio;
-    }
+    if (data.bio !== undefined) updateData.bio = data.bio;
 
     if (data.avatar) {
+      // [CLEANUP] Remove old avatar before setting new one
       if (existing.avatar) {
         await removeCloudinaryImage(existing.avatar);
       }
@@ -99,10 +105,12 @@ export const teacherService = {
 
       return teacher;
     } catch (error) {
+      // [CLEANUP] Remove uploaded avatar on failure
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
 
+      // [ERROR] Handle duplicate name
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
@@ -115,6 +123,8 @@ export const teacherService = {
       throw error;
     }
   },
+
+  // [DB] Delete teacher if no courses assigned
   async deleteTeacher(id: string) {
     const existing = await prisma.teacher.findUnique({
       where: { id },
@@ -125,6 +135,7 @@ export const teacherService = {
       throw new AppError("مدرس مورد نظر یافت نشد", 404);
     }
 
+    // [LOGIC] Block delete if courses are assigned
     if (existing._count.courses > 0) {
       throw new AppError(
         `این مدرس ${existing._count.courses} دوره دارد. ابتدا دوره‌ها را حذف یا به مدرس دیگری منتقل کنید`,
@@ -134,11 +145,13 @@ export const teacherService = {
 
     await prisma.teacher.delete({ where: { id } });
 
+    // [CLEANUP] Remove avatar from Cloudinary
     if (existing.avatar) {
       await removeCloudinaryImage(existing.avatar);
     }
   },
 
+  // [DB] Get paginated teachers with search
   async getTeachers(query: ListTeachersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -165,6 +178,7 @@ export const teacherService = {
       prisma.teacher.count({ where }),
     ]);
 
+    // [UTIL] Flatten _count into coursesCount
     const formattedItems = items.map(({ _count, ...teacher }) => ({
       ...teacher,
       coursesCount: _count.courses,
@@ -176,6 +190,7 @@ export const teacherService = {
     };
   },
 
+  // [DB] Get teacher with published courses by slug
   async getTeacherBySlug(slug: string) {
     const teacher = await prisma.teacher.findUnique({
       where: { slug },
@@ -198,9 +213,7 @@ export const teacherService = {
             category: {
               select: { id: true, name: true, slug: true },
             },
-            _count: {
-              select: { enrollments: true },
-            },
+            _count: { select: { enrollments: true } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -215,6 +228,7 @@ export const teacherService = {
 
     return {
       ...rest,
+      // [UTIL] Flatten _count into studentsCount
       courses: courses.map(({ _count, ...course }) => ({
         ...course,
         studentsCount: _count.enrollments,

@@ -21,7 +21,7 @@ import {
 
 const router = Router();
 
-// ─── Admin
+// [POST] Create teacher with avatar upload
 router.post(
   "/",
   authentication,
@@ -31,6 +31,7 @@ router.post(
   asyncHandler(createTeacherController),
 );
 
+// [PUT] Update teacher with optional avatar upload
 router.put(
   "/:id",
   authentication,
@@ -40,6 +41,7 @@ router.put(
   asyncHandler(updateTeacherController),
 );
 
+// [DELETE] Delete teacher
 router.delete(
   "/:id",
   authentication,
@@ -48,13 +50,14 @@ router.delete(
   asyncHandler(deleteTeacherController),
 );
 
-// ─── Public
+// [GET] Public list teachers
 router.get(
   "/",
   validate(listTeachersSchema),
   asyncHandler(getTeachersController),
 );
 
+// [GET] Get teacher by slug
 router.get(
   "/:slug",
   validate(getTeacherBySlugSchema),
