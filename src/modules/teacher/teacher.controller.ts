@@ -20,7 +20,11 @@ export const createTeacherController: RequestHandler = async (req, res) => {
 };
 
 // [PUT] Update teacher
-export const updateTeacherController: RequestHandler = async (req, res, next) => {
+export const updateTeacherController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
   const id = req.params.id as string;
 
   const updateData: {
@@ -62,7 +66,9 @@ export const deleteTeacherController: RequestHandler = async (req, res) => {
 
 // [GET] List teachers with pagination
 export const getTeachersController: RequestHandler = async (req, res) => {
-  const result = await teacherService.getTeachers(req.query as ListTeachersQuery);
+  const result = await teacherService.getTeachers(
+    req.query as ListTeachersQuery,
+  );
 
   return res.status(200).json({
     status: "success",
