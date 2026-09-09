@@ -32,7 +32,7 @@ export const authentication = async (
   const decoded = tryVerifyToken(bearerToken) ?? tryVerifyToken(cookieToken);
 
   if (!decoded) {
-    return next(new AppError("توکن شما معتبر نیست، لطفا ابتدا وارد شوید", 401));
+    return next(new AppError("auth.errors.invalidToken", 401));
   }
 
   try {
@@ -48,11 +48,11 @@ export const authentication = async (
     });
 
     if (!user) {
-      return next(new AppError("کاربر یافت نشد", 401));
+      return next(new AppError("auth.errors.userNotFound", 401));
     }
 
     if (user.isBanned) {
-      return next(new AppError("حساب کاربری شما مسدود شده است", 403));
+      return next(new AppError("auth.errors.accountBanned", 403));
     }
 
     // [AUTH] Attach user to request

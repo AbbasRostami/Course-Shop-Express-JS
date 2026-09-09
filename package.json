@@ -15,7 +15,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.24.0",
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
@@ -29,6 +28,8 @@
     "express-rate-limit": "^8.5.2",
     "googleapis": "^173.0.0",
     "helmet": "^8.2.0",
+    "i18next": "^26.4.2",
+    "i18next-http-middleware": "^3.9.9",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",

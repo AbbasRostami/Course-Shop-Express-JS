@@ -40,6 +40,7 @@ import {
   verifyChangeEmailSchema,
   verifyEmailSchema,
 } from "./auth.validator.js";
+
 const router = Router();
 
 // [POST] Register

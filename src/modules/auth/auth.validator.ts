@@ -3,8 +3,14 @@ import { z } from "zod";
 // [VALID] Register schema
 export const registerSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
-    password: z.string().min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
+    password: z
+      .string("auth.validation.passwordRequired")
+      .min(6, "auth.validation.passwordMin"),
     name: z.string().optional(),
   }),
 });
@@ -12,46 +18,79 @@ export const registerSchema = z.object({
 // [VALID] Verify email schema
 export const verifyEmailSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
-    code: z.string().length(6, "کد تایید باید ۶ رقمی باشد"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
+    code: z
+      .string("auth.validation.otpRequired")
+      .length(6, "auth.validation.otpLength"),
   }),
 });
 
 // [VALID] Login schema
 export const loginSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
-    password: z.string().min(1, "رمز عبور نمی‌تواند خالی باشد"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
+    password: z
+      .string("auth.validation.passwordRequired")
+      .trim()
+      .min(1, "auth.validation.passwordRequired"),
   }),
 });
 
 // [VALID] Forgot password schema
 export const forgotPasswordSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
   }),
 });
 
 // [VALID] Reset password schema
 export const resetPasswordSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
-    code: z.string().length(6, "کد تایید باید ۶ رقمی باشد"),
-    newPassword: z.string().min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
+    code: z
+      .string("auth.validation.otpRequired")
+      .length(6, "auth.validation.otpLength"),
+    newPassword: z
+      .string("auth.validation.passwordRequired")
+      .min(6, "auth.validation.passwordMin"),
   }),
 });
 
 // [VALID] Resend verification schema
 export const resendVerificationSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
   }),
 });
 
 // [VALID] Resend reset code schema
 export const resendResetCodeSchema = z.object({
   body: z.object({
-    email: z.string().email("ایمیل وارد شده معتبر نیست"),
+    email: z
+      .string("auth.validation.emailRequired")
+      .trim()
+      .min(1, "auth.validation.emailRequired")
+      .email("auth.validation.emailInvalid"),
   }),
 });
 
@@ -60,15 +99,16 @@ export const changePasswordSchema = z
   .object({
     body: z.object({
       currentPassword: z
-        .string({ error: "رمز عبور فعلی الزامی است" })
-        .min(1, "رمز عبور فعلی نمی‌تواند خالی باشد"),
+        .string("auth.validation.currentPasswordRequired")
+        .trim()
+        .min(1, "auth.validation.currentPasswordMin"),
       newPassword: z
-        .string({ error: "رمز عبور جدید الزامی است" })
-        .min(6, "رمز عبور جدید باید حداقل ۶ کاراکتر باشد"),
+        .string("auth.validation.newPasswordRequired")
+        .min(6, "auth.validation.newPasswordMin"),
     }),
   })
   .refine((data) => data.body.currentPassword !== data.body.newPassword, {
-    message: "رمز عبور جدید نباید با رمز فعلی یکسان باشد",
+    message: "auth.validation.newPasswordSameAsCurrent",
     path: ["body", "newPassword"],
   });
 
@@ -76,26 +116,39 @@ export const changePasswordSchema = z
 export const requestChangeEmailSchema = z.object({
   body: z.object({
     newEmail: z
-      .string({ error: "ایمیل جدید الزامی است" })
-      .email("ایمیل وارد شده معتبر نیست"),
+      .string("auth.validation.newEmailRequired")
+      .trim()
+      .min(1, "auth.validation.newEmailRequired")
+      .email("auth.validation.emailInvalid"),
     password: z
-      .string({ error: "رمز عبور الزامی است" })
-      .min(1, "رمز عبور نمی‌تواند خالی باشد"),
+      .string("auth.validation.passwordRequired")
+      .trim()
+      .min(1, "auth.validation.passwordRequired"),
   }),
 });
 
 // [VALID] Verify change email schema
 export const verifyChangeEmailSchema = z.object({
   body: z.object({
-    code: z.string({ error: "کد الزامی است" }).length(6, "کد باید ۶ رقمی باشد"),
+    code: z
+      .string("auth.validation.otpRequired")
+      .length(6, "auth.validation.codeLength"),
   }),
 });
 
-export type RequestChangeEmailInput = z.infer<typeof requestChangeEmailSchema>["body"];
-export type VerifyChangeEmailInput = z.infer<typeof verifyChangeEmailSchema>["body"];
+export type RequestChangeEmailInput = z.infer<
+  typeof requestChangeEmailSchema
+>["body"];
+export type VerifyChangeEmailInput = z.infer<
+  typeof verifyChangeEmailSchema
+>["body"];
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>["body"];
-export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>["body"];
-export type ResendResetCodeInput = z.infer<typeof resendResetCodeSchema>["body"];
+export type ResendVerificationInput = z.infer<
+  typeof resendVerificationSchema
+>["body"];
+export type ResendResetCodeInput = z.infer<
+  typeof resendResetCodeSchema
+>["body"];
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>["body"];
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>["body"];
 export type RegisterInput = z.infer<typeof registerSchema>["body"];

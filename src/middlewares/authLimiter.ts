@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import { ipKeyGenerator, rateLimit } from "express-rate-limit";
+import i18next from "i18next";
 
 // [UTIL] Normalize IP
 const getIp = (req: Request) => ipKeyGenerator(req.ip ?? "unknown");
@@ -10,11 +11,22 @@ const getEmail = (req: Request) => {
   return typeof email === "string" ? email.trim().toLowerCase() : undefined;
 };
 
-// [UTIL] Fail response
-const jsonMessage = (message: string) => ({
-  status: "fail",
-  data: { message },
-});
+// [UTIL] Get request locale
+const getLocale = (req: Request): "fa" | "en" => {
+  const lang = req.headers["accept-language"]?.split(",")[0]?.split("-")[0];
+  return lang === "en" ? "en" : "fa";
+};
+
+// [UTIL] Translate fail response
+const jsonMessage = (req: Request, key: string) => {
+  const locale = getLocale(req);
+  return {
+    status: "fail",
+    data: { 
+      message: i18next.t(key as any, { lng: locale }) 
+    },
+  };
+};
 
 // [RATE] Login attempts
 export const loginLimiter = rateLimit({
@@ -28,9 +40,7 @@ export const loginLimiter = rateLimit({
     const ip = getIp(req);
     return email ? `login:${ip}:${email}` : `login:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد تلاش‌های ناموفق برای ورود بیش از حد مجاز است. لطفاً 15 دقیقه دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.login"),
 });
 
 // [RATE] Register by IP
@@ -40,9 +50,7 @@ export const registerIpLimiter = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   keyGenerator: (req) => `register-ip:${getIp(req)}`,
-  message: jsonMessage(
-    "تعداد درخواست‌های ثبت‌نام از این IP بیش از حد مجاز است. لطفاً 1 ساعت دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.registerIp"),
 });
 
 // [RATE] Register by email
@@ -56,9 +64,7 @@ export const registerLimiter = rateLimit({
     const ip = getIp(req);
     return email ? `register:${ip}:${email}` : `register:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد درخواست‌های ثبت‌نام برای این ایمیل بیش از حد مجاز است. لطفاً 1 ساعت دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.registerEmail"),
 });
 
 // [RATE] Forgot password
@@ -72,9 +78,7 @@ export const forgotPasswordLimiter = rateLimit({
     const ip = getIp(req);
     return email ? `forgot-pwd:${ip}:${email}` : `forgot-pwd:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد درخواست‌های بازیابی رمز عبور بیش از حد مجاز است. لطفاً 1 ساعت دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.forgotPassword"),
 });
 
 // [RATE] Reset password
@@ -88,9 +92,7 @@ export const resetPasswordLimiter = rateLimit({
     const ip = getIp(req);
     return email ? `reset-pwd:${ip}:${email}` : `reset-pwd:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد تلاش‌های ناموفق برای بازیابی رمز بیش از حد مجاز است. لطفاً 15 دقیقه دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.resetPassword"),
 });
 
 // [RATE] Resend verify code
@@ -104,9 +106,7 @@ export const resendVerificationLimiter = rateLimit({
     const ip = getIp(req);
     return email ? `resend-verify:${ip}:${email}` : `resend-verify:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد درخواست‌های ارسال مجدد کد تایید بیش از حد مجاز است. لطفاً 5 دقیقه دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.resendVerify"),
 });
 
 // [RATE] Resend reset code
@@ -120,9 +120,7 @@ export const resendResetCodeLimiter = rateLimit({
     const ip = getIp(req);
     return email ? `resend-reset:${ip}:${email}` : `resend-reset:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد درخواست‌های ارسال مجدد کد بازیابی بیش از حد مجاز است. لطفاً 5 دقیقه دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.resendReset"),
 });
 
 // [RATE] Change email
@@ -140,9 +138,7 @@ export const changeEmailLimiter = rateLimit({
 
     return newEmail ? `change-email:${ip}:${newEmail}` : `change-email:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد درخواست‌های تغییر ایمیل بیش از حد مجاز است. لطفاً 1 ساعت دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.changeEmail"),
 });
 
 // [RATE] Resend change-email code
@@ -155,7 +151,5 @@ export const resendChangeEmailCodeLimiter = rateLimit({
     const ip = getIp(req);
     return `resend-change-email:${ip}`;
   },
-  message: jsonMessage(
-    "تعداد درخواست‌های ارسال مجدد کد تغییر ایمیل بیش از حد مجاز است. لطفاً 5 دقیقه دیگر تلاش کنید.",
-  ),
+  message: (req: Request) => jsonMessage(req, "auth.limiters.resendChangeEmail"),
 });

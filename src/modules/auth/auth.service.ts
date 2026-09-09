@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { sendEmail } from "../../utils/email.js";
@@ -38,20 +39,21 @@ const getOtpExpiresAt = () => new Date(Date.now() + OTP_EXPIRES_MS);
 
 export const authService = {
   // [AUTH] Register new user or resend OTP
-  async register(data: RegisterInput) {
+  async register(data: RegisterInput, locale: "fa" | "en") {
+    const t = i18next.getFixedT(locale);
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (existingUser) {
       if (existingUser.isVerified) {
-        throw new AppError("خطا در ثبت نام", 400, {
-          email: "کاربری با این ایمیل قبلاً ثبت‌ نام کرده است",
+        throw new AppError("auth.errors.emailExists", 400, {
+          email: "auth.errors.emailExists",
         });
       }
 
       if (existingUser.isBanned) {
-        throw new AppError("این حساب کاربری مسدود شده است", 403);
+        throw new AppError("auth.errors.accountBanned", 403);
       }
 
       // [LOGIC] Block if previous OTP still valid
@@ -60,9 +62,8 @@ export const authService = {
         existingUser.verificationExpires &&
         existingUser.verificationExpires > new Date()
       ) {
-        throw new AppError("خطا در ثبت نام", 400, {
-          email:
-            "کد تایید قبلی هنوز معتبر است. لطفاً ایمیل خود را بررسی کنید یا از گزینه «ارسال مجدد کد» استفاده کنید",
+        throw new AppError("auth.errors.registerError", 400, {
+          email: "auth.errors.otpStillValid",
         });
       }
 
@@ -82,28 +83,26 @@ export const authService = {
       });
 
       const emailHtml = getVerificationEmailTemplate(
-        updatedUser.name || "کاربر گرامی",
+        updatedUser.name || t("auth.email.dearUser"),
         verificationCode,
+        locale,
       );
 
       try {
         await sendEmail({
           to: updatedUser.email,
-          subject: "🔑 کد تایید حساب کاربری",
+          subject: t("auth.email.verificationSubject"),
           html: emailHtml,
-          text: `کد تایید شما: ${verificationCode}`,
+          text: t("auth.email.verificationText", { code: verificationCode }),
         });
       } catch (err) {
         console.error("❌ Error sending verification email:", err);
-        throw new AppError(
-          "ارسال ایمیل تایید ناموفق بود. لطفاً دوباره تلاش کنید.",
-          500,
-        );
+        throw new AppError("auth.errors.emailSendFailed", 500);
       }
 
       return {
         email: updatedUser.email,
-        message: "کد تایید جدید به ایمیل شما ارسال شد",
+        message: "auth.success.otpResent",
       };
     }
 
@@ -126,55 +125,56 @@ export const authService = {
     });
 
     const emailHtml = getVerificationEmailTemplate(
-      user.name || "کاربر گرامی",
+      user.name || t("auth.email.dearUser"),
       verificationCode,
+      locale,
     );
 
     try {
       await sendEmail({
         to: user.email,
-        subject: "🔑 کد تایید حساب کاربری",
+        subject: t("auth.email.verificationSubject"),
         html: emailHtml,
-        text: `کد تایید شما: ${verificationCode}`,
+        text: t("auth.email.verificationText", { code: verificationCode }),
       });
     } catch (err) {
       console.error("❌ Error sending verification email:", err);
       // [CLEANUP] Rollback user on email failure
       await prisma.user.delete({ where: { id: user.id } });
-      throw new AppError(
-        "ارسال ایمیل تایید ناموفق بود. لطفاً دوباره تلاش کنید.",
-        500,
-      );
+      throw new AppError("auth.errors.emailSendFailed", 500);
     }
 
     return {
       email: user.email,
-      message: "کد تایید به ایمیل شما ارسال شد",
+      message: "auth.success.otpSent",
     };
   },
 
   // [AUTH] Verify OTP and auto-login
-  async verifyEmail(data: VerifyEmailInput): Promise<AuthResponse> {
+  async verifyEmail(
+    data: VerifyEmailInput,
+    locale: "fa" | "en",
+  ): Promise<AuthResponse> {
     const user = await prisma.user.findUnique({ where: { email: data.email } });
 
     if (!user || !user.verificationCode || !user.verificationExpires) {
-      throw new AppError("خطا در تایید ایمیل", 400, {
-        code: "کد تایید اشتباه است",
+      throw new AppError("auth.errors.invalidOtp", 400, {
+        code: "auth.errors.invalidOtp",
       });
     }
 
     if (user.verificationExpires < new Date()) {
-      throw new AppError("خطا در تایید ایمیل", 400, {
-        code: "کد تایید منقضی شده است، لطفاً مجدداً ثبت‌نام کنید",
+      throw new AppError("auth.errors.expiredOtp", 400, {
+        code: "auth.errors.expiredOtp",
       });
     }
 
     if (user.verificationCode !== data.code) {
-      throw new AppError("کد تایید اشتباه است", 400);
+      throw new AppError("auth.errors.invalidOtp", 400);
     }
 
     if (user.isBanned) {
-      throw new AppError("حساب کاربری شما مسدود شده است", 403);
+      throw new AppError("auth.errors.accountBanned", 403);
     }
 
     const accessToken = generateAccessToken({ id: user.id, email: user.email });
@@ -203,26 +203,23 @@ export const authService = {
   },
 
   // [AUTH] Login with email and password
-  async login(data: LoginInput): Promise<AuthResponse> {
+  async login(data: LoginInput, locale: "fa" | "en"): Promise<AuthResponse> {
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) {
-      throw new AppError("ایمیل یا رمز عبور اشتباه است", 401);
+      throw new AppError("auth.errors.invalidCredentials", 401);
     }
 
     if (!user.isVerified) {
-      throw new AppError(
-        "حساب کاربری شما هنوز تایید نشده است. ابتدا ایمیل خود را تایید کنید",
-        403,
-      );
+      throw new AppError("auth.errors.notVerified", 403);
     }
 
     if (user.isBanned) {
-      throw new AppError("حساب کاربری شما مسدود شده است", 403);
+      throw new AppError("auth.errors.accountBanned", 403);
     }
 
     const isMatch = await comparePassword(data.password, user.password);
     if (!isMatch) {
-      throw new AppError("ایمیل یا رمز عبور اشتباه است", 401);
+      throw new AppError("auth.errors.invalidCredentials", 401);
     }
 
     const accessToken = generateAccessToken({ id: user.id, email: user.email });
@@ -242,7 +239,7 @@ export const authService = {
   },
 
   // [AUTH] Rotate refresh token
-  async refresh(token: string) {
+  async refresh(token: string, locale: "fa" | "en") {
     try {
       const decoded = verifyRefreshToken(token) as { id: string };
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -255,7 +252,7 @@ export const authService = {
             data: { refreshToken: null },
           });
         }
-        throw new AppError("توکن نوسازی نامعتبر یا منقضی شده است", 401);
+        throw new AppError("auth.errors.invalidRefreshToken", 401);
       }
 
       if (user.isBanned) {
@@ -263,7 +260,7 @@ export const authService = {
           where: { id: user.id },
           data: { refreshToken: null },
         });
-        throw new AppError("حساب کاربری شما مسدود شده است", 403);
+        throw new AppError("auth.errors.accountBanned", 403);
       }
 
       const newAccessToken = generateAccessToken({
@@ -284,7 +281,7 @@ export const authService = {
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      throw new AppError("نشست شما منقضی شده است، لطفا دوباره وارد شوید", 401);
+      throw new AppError("auth.errors.sessionExpired", 401);
     }
   },
 
@@ -300,14 +297,15 @@ export const authService = {
   },
 
   // [AUTH] Send password reset OTP
-  async forgotPassword(data: ForgotPasswordInput) {
+  async forgotPassword(data: ForgotPasswordInput, locale: "fa" | "en") {
+    const t = i18next.getFixedT(locale);
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     // [SECURITY] Generic message to prevent email enumeration
     const genericMessage = {
-      message: "اگر این ایمیل در سیستم وجود داشته باشد، کد بازیابی ارسال شد",
+      message: "auth.success.resetEmailSent",
     };
 
     if (!user || !user.isVerified) {
@@ -327,30 +325,31 @@ export const authService = {
     });
 
     const emailHtml = getResetPasswordEmailTemplate(
-      user.name || "کاربر گرامی",
+      user.name || t("auth.email.dearUser"),
       resetCode,
+      locale,
     );
 
     // [EMAIL] Send async, don't block response
     sendEmail({
       to: user.email,
-      subject: "🔐 بازیابی رمز عبور",
+      subject: t("auth.email.resetSubject"),
       html: emailHtml,
-      text: `کد بازیابی: ${resetCode}`,
+      text: t("auth.email.resetText", { code: resetCode }),
     }).catch((err) => console.error("❌ Error sending reset email:", err));
 
     return genericMessage;
   },
 
   // [AUTH] Reset password with OTP code
-  async resetPassword(data: ResetPasswordInput) {
+  async resetPassword(data: ResetPasswordInput, locale: "fa" | "en") {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user || !user.resetPasswordCode || !user.resetPasswordExpires) {
-      throw new AppError("درخواست بازیابی معتبر نیست", 400, {
-        code: "ابتدا درخواست بازیابی رمز عبور دهید",
+      throw new AppError("auth.errors.invalidResetRequest", 400, {
+        code: "auth.errors.invalidResetRequest",
       });
     }
 
@@ -364,14 +363,14 @@ export const authService = {
         },
       });
 
-      throw new AppError("کد بازیابی منقضی شده است", 400, {
-        code: "کد منقضی شده است، دوباره درخواست دهید",
+      throw new AppError("auth.errors.expiredResetCode", 400, {
+        code: "auth.errors.expiredResetCode",
       });
     }
 
     if (user.resetPasswordCode !== data.code) {
-      throw new AppError("کد بازیابی اشتباه است", 400, {
-        code: "کد وارد شده صحیح نیست",
+      throw new AppError("auth.errors.incorrectResetCode", 400, {
+        code: "auth.errors.incorrectResetCode",
       });
     }
 
@@ -389,19 +388,20 @@ export const authService = {
     });
 
     return {
-      message: "رمز عبور شما با موفقیت تغییر یافت. لطفاً مجدداً وارد شوید",
+      message: "auth.success.passwordResetSuccess",
     };
   },
 
   // [AUTH] Resend email verification OTP
-  async resendVerification(data: ResendVerificationInput) {
+  async resendVerification(data: ResendVerificationInput, locale: "fa" | "en") {
+    const t = i18next.getFixedT(locale);
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     // [SECURITY] Generic message to prevent email enumeration
     const genericMessage = {
-      message: "کد تایید مجدداً به ایمیل ارسال شد",
+      message: "auth.success.verificationResent",
     };
 
     if (!user || user.isVerified) {
@@ -418,30 +418,32 @@ export const authService = {
     });
 
     const emailHtml = getVerificationEmailTemplate(
-      user.name || "کاربر گرامی",
+      user.name || t("auth.email.dearUser"),
       verificationCode,
+      locale,
     );
 
     // [EMAIL] Send async, don't block response
     sendEmail({
       to: user.email,
-      subject: "🔑 کد تایید حساب کاربری",
+      subject: t("auth.email.verificationSubject"),
       html: emailHtml,
-      text: `کد تایید شما: ${verificationCode}`,
+      text: t("auth.email.verificationText", { code: verificationCode }),
     }).catch((err) => console.error("❌ Error sending email:", err));
 
     return genericMessage;
   },
 
   // [AUTH] Resend password reset OTP
-  async resendResetCode(data: ResendResetCodeInput) {
+  async resendResetCode(data: ResendResetCodeInput, locale: "fa" | "en") {
+    const t = i18next.getFixedT(locale);
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     // [SECURITY] Generic message to prevent email enumeration
     const genericMessage = {
-      message: "کد تایید مجدداً به ایمیل ارسال شد",
+      message: "auth.success.otpResent",
     };
 
     if (!user || !user.isVerified) {
@@ -466,33 +468,38 @@ export const authService = {
     });
 
     const emailHtml = getResetPasswordEmailTemplate(
-      user.name || "کاربر گرامی",
+      user.name || t("auth.email.dearUser"),
       resetCode,
+      locale,
     );
 
     // [EMAIL] Send async, don't block response
     sendEmail({
       to: user.email,
-      subject: "🔐 بازیابی رمز عبور",
+      subject: t("auth.email.resetSubject"),
       html: emailHtml,
-      text: `کد بازیابی: ${resetCode}`,
+      text: t("auth.email.resetText", { code: resetCode }),
     }).catch((err) => console.error("❌ Error sending reset email:", err));
 
     return genericMessage;
   },
 
   // [AUTH] Change password for authenticated user
-  async changePassword(userId: string, data: ChangePasswordInput) {
+  async changePassword(
+    userId: string,
+    data: ChangePasswordInput,
+    locale: "fa" | "en",
+  ) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("auth.errors.userNotFound", 404);
     }
 
     const isMatch = await comparePassword(data.currentPassword, user.password);
     if (!isMatch) {
-      throw new AppError("رمز عبور فعلی اشتباه است", 400, {
-        currentPassword: "رمز عبور فعلی صحیح نیست",
+      throw new AppError("auth.errors.currentPasswordIncorrect", 400, {
+        currentPassword: "auth.errors.currentPasswordIncorrect",
       });
     }
 
@@ -508,21 +515,26 @@ export const authService = {
     });
 
     return {
-      message: "رمز عبور با موفقیت تغییر یافت. لطفاً مجدداً وارد شوید",
+      message: "auth.success.passwordChanged",
     };
   },
 
   // [AUTH] Request email change - send OTP to new email
-  async requestChangeEmail(userId: string, data: RequestChangeEmailInput) {
+  async requestChangeEmail(
+    userId: string,
+    data: RequestChangeEmailInput,
+    locale: "fa" | "en",
+  ) {
+    const t = i18next.getFixedT(locale);
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("auth.errors.userNotFound", 404);
     }
 
     if (user.email === data.newEmail.toLowerCase()) {
-      throw new AppError("ایمیل جدید نمی‌تواند با ایمیل فعلی یکسان باشد", 400, {
-        newEmail: "ایمیل جدید همان ایمیل فعلی است",
+      throw new AppError("auth.errors.sameEmail", 400, {
+        newEmail: "auth.errors.sameEmail",
       });
     }
 
@@ -532,15 +544,15 @@ export const authService = {
     });
 
     if (existingUser) {
-      throw new AppError("این ایمیل قبلاً استفاده شده است", 400, {
-        newEmail: "کاربر دیگری با این ایمیل ثبت‌نام کرده است",
+      throw new AppError("auth.errors.emailTaken", 400, {
+        newEmail: "auth.errors.emailTaken",
       });
     }
 
     const isMatch = await comparePassword(data.password, user.password);
     if (!isMatch) {
-      throw new AppError("رمز عبور اشتباه است", 400, {
-        password: "رمز عبور صحیح نیست",
+      throw new AppError("auth.errors.passwordIncorrect", 400, {
+        password: "auth.errors.passwordIncorrect",
       });
     }
 
@@ -558,31 +570,36 @@ export const authService = {
     });
 
     const emailHtml = getChangeEmailTemplate(
-      user.name || "کاربر گرامی",
+      user.name || t("auth.email.dearUser"),
       data.newEmail,
       code,
+      locale,
     );
 
     // [EMAIL] Send OTP to new email
     sendEmail({
       to: data.newEmail,
-      subject: "📧 تایید تغییر ایمیل",
+      subject: t("auth.email.changeEmailSubject"),
       html: emailHtml,
-      text: `کد تایید: ${code}`,
+      text: t("auth.email.changeEmailText", { code }),
     }).catch((err) => console.error("❌ Error sending change email:", err));
 
     return {
-      message: "کد تایید به ایمیل جدید شما ارسال شد",
+      message: "auth.success.changeEmailOtpSent",
       newEmail: data.newEmail,
     };
   },
 
   // [AUTH] Verify OTP and apply new email
-  async verifyChangeEmail(userId: string, data: VerifyChangeEmailInput) {
+  async verifyChangeEmail(
+    userId: string,
+    data: VerifyChangeEmailInput,
+    locale: "fa" | "en",
+  ) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("auth.errors.userNotFound", 404);
     }
 
     if (
@@ -590,8 +607,8 @@ export const authService = {
       !user.changeEmailCode ||
       !user.changeEmailExpires
     ) {
-      throw new AppError("درخواست تغییر ایمیل معتبر نیست", 400, {
-        code: "ابتدا درخواست تغییر ایمیل دهید",
+      throw new AppError("auth.errors.invalidEmailChangeRequest", 400, {
+        code: "auth.errors.requestEmailChangeFirst",
       });
     }
 
@@ -606,14 +623,14 @@ export const authService = {
         },
       });
 
-      throw new AppError("کد منقضی شده است", 400, {
-        code: "کد منقضی شده است، دوباره درخواست دهید",
+      throw new AppError("auth.errors.expiredCode", 400, {
+        code: "auth.errors.expiredCode",
       });
     }
 
     if (user.changeEmailCode !== data.code) {
-      throw new AppError("کد اشتباه است", 400, {
-        code: "کد وارد شده صحیح نیست",
+      throw new AppError("auth.errors.invalidOtp", 400, {
+        code: "auth.errors.invalidOtp",
       });
     }
 
@@ -632,10 +649,7 @@ export const authService = {
         },
       });
 
-      throw new AppError(
-        "این ایمیل در فاصله درخواست تا تایید توسط شخص دیگری ثبت شده است",
-        400,
-      );
+      throw new AppError("auth.errors.emailTakenDuringProcess", 400);
     }
 
     // [DB] Apply new email and invalidate all sessions
@@ -651,21 +665,22 @@ export const authService = {
     });
 
     return {
-      message: "ایمیل شما با موفقیت تغییر یافت. لطفاً مجدداً وارد شوید",
+      message: "auth.success.emailChangedSuccess",
       newEmail: user.pendingNewEmail,
     };
   },
 
   // [AUTH] Resend change email OTP
-  async resendChangeEmailCode(userId: string) {
+  async resendChangeEmailCode(userId: string, locale: "fa" | "en") {
+    const t = i18next.getFixedT(locale);
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("auth.errors.userNotFound", 404);
     }
 
     if (!user.pendingNewEmail) {
-      throw new AppError("ابتدا درخواست تغییر ایمیل دهید", 400);
+      throw new AppError("auth.errors.requestEmailChangeFirst", 400);
     }
 
     const code = generateCode();
@@ -681,21 +696,22 @@ export const authService = {
     });
 
     const emailHtml = getChangeEmailTemplate(
-      user.name || "کاربر گرامی",
+      user.name || t("auth.email.dearUser"),
       user.pendingNewEmail,
       code,
+      locale,
     );
 
     // [EMAIL] Resend OTP to pending new email
     sendEmail({
       to: user.pendingNewEmail,
-      subject: "📧 تایید تغییر ایمیل",
+      subject: t("auth.email.changeEmailSubject"),
       html: emailHtml,
-      text: `کد تایید: ${code}`,
+      text: t("auth.email.changeEmailText", { code }),
     }).catch((err) => console.error("❌ Error sending change email:", err));
 
     return {
-      message: "کد تایید مجدداً به ایمیل جدید ارسال شد",
+      message: "auth.success.changeEmailCodeResent",
       newEmail: user.pendingNewEmail,
     };
   },

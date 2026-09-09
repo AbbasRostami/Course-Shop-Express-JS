@@ -4,6 +4,8 @@ import { logger, sendErrorToTelegram } from "./logger.js";
 
 // [MW] Global error handler
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  const t = req.t;
+
   // [ALERT] Telegram notifier
   const notifyTelegram = (
     statusCode: number,
@@ -24,6 +26,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
   // [ERROR] Handle AppError
   if (err instanceof AppError) {
+    const translatedMessage = t(err.messageKey as any);
+
     if (err.statusCode >= 500) {
       logger.error("💥 Server Error", {
         message: err.message,
@@ -35,15 +39,25 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     }
 
     if (err.status === "fail") {
+      const translatedData: Record<string, string> = {};
+
+      if (err.failData) {
+        for (const [key, val] of Object.entries(err.failData)) {
+          translatedData[key] = t(val as any);
+        }
+      } else {
+        translatedData["message"] = translatedMessage;
+      }
+
       return res.status(err.statusCode).json({
         status: "fail",
-        data: err.failData || { message: err.message },
+        data: translatedData,
       });
     }
 
     return res.status(err.statusCode).json({
       status: "error",
-      message: err.message,
+      message: translatedMessage,
       code: err.statusCode,
     });
   }
@@ -60,7 +74,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
   return res.status(500).json({
     status: "error",
-    message: "خطایی در سمت سرور رخ داده است. لطفاً بعداً تلاش کنید.",
+    message: t("common.serverError"),
     code: 500,
     ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });

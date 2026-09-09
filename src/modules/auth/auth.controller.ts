@@ -30,13 +30,16 @@ const CLEAR_COOKIE_OPTIONS = {
 
 // [POST] Register
 export const registerController: RequestHandler = async (req, res) => {
-  const result = await authService.register(req.body);
+  const result = await authService.register(
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   return res.status(201).json({
     status: "success",
     data: {
       email: result.email,
-      message: result.message,
+      message: req.t(result.message as any),
     },
   });
 };
@@ -45,6 +48,7 @@ export const registerController: RequestHandler = async (req, res) => {
 export const verifyEmailController: RequestHandler = async (req, res) => {
   const { accessToken, refreshToken, user } = await authService.verifyEmail(
     req.body,
+    req.language as "fa" | "en",
   );
 
   res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
@@ -53,7 +57,7 @@ export const verifyEmailController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: "ورود با موفقیت انجام شد",
+      message: req.t("auth.success.loginSuccess"),
       accessToken,
       user,
     },
@@ -62,7 +66,10 @@ export const verifyEmailController: RequestHandler = async (req, res) => {
 
 // [POST] Login
 export const loginController: RequestHandler = async (req, res) => {
-  const { accessToken, refreshToken, user } = await authService.login(req.body);
+  const { accessToken, refreshToken, user } = await authService.login(
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
   res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
@@ -70,7 +77,7 @@ export const loginController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: "ورود با موفقیت انجام شد",
+      message: req.t("auth.success.loginSuccess"),
       accessToken,
       user,
     },
@@ -82,10 +89,13 @@ export const refreshController: RequestHandler = async (req, res, next) => {
   const token = req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!token) {
-    return next(new AppError("توکن نوسازی یافت نشد", 401));
+    return next(new AppError("auth.errors.refreshTokenNotFound", 401));
   }
 
-  const { accessToken, refreshToken } = await authService.refresh(token);
+  const { accessToken, refreshToken } = await authService.refresh(
+    token,
+    req.language as "fa" | "en",
+  );
 
   res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
   res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
@@ -93,7 +103,7 @@ export const refreshController: RequestHandler = async (req, res, next) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: "تمدید موفق",
+      message: req.t("auth.success.refreshSuccess"),
       accessToken,
     },
   });
@@ -116,99 +126,154 @@ export const logoutController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "خروج با موفقیت انجام شد" },
+    data: { message: req.t("auth.success.logoutSuccess") },
   });
 };
 
 // [POST] Forgot password
 export const forgotPasswordController: RequestHandler = async (req, res) => {
-  const result = await authService.forgotPassword(req.body);
+  const result = await authService.forgotPassword(
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
 // [POST] Reset password and clear sessions
 export const resetPasswordController: RequestHandler = async (req, res) => {
-  const result = await authService.resetPassword(req.body);
+  const result = await authService.resetPassword(
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   res.clearCookie("accessToken", CLEAR_COOKIE_OPTIONS);
   res.clearCookie("refreshToken", CLEAR_COOKIE_OPTIONS);
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
 // [POST] Resend email verification code
-export const resendVerificationController: RequestHandler = async (req, res) => {
-  const result = await authService.resendVerification(req.body);
+export const resendVerificationController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const result = await authService.resendVerification(
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
 // [POST] Resend password reset code
 export const resendResetCodeController: RequestHandler = async (req, res) => {
-  const result = await authService.resendResetCode(req.body);
+  const result = await authService.resendResetCode(
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
 // [POST] Change password and clear sessions
 export const changePasswordController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
-  const result = await authService.changePassword(userId, req.body);
+  const result = await authService.changePassword(
+    userId,
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   res.clearCookie("accessToken", CLEAR_COOKIE_OPTIONS);
   res.clearCookie("refreshToken", CLEAR_COOKIE_OPTIONS);
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
 // [POST] Request email change
-export const requestChangeEmailController: RequestHandler = async (req, res) => {
+export const requestChangeEmailController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
-  const result = await authService.requestChangeEmail(userId, req.body);
+  const result = await authService.requestChangeEmail(
+    userId,
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      newEmail: result.newEmail,
+    },
   });
 };
 
 // [POST] Verify email change and clear sessions
 export const verifyChangeEmailController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
-  const result = await authService.verifyChangeEmail(userId, req.body);
+  const result = await authService.verifyChangeEmail(
+    userId,
+    req.body,
+    req.language as "fa" | "en",
+  );
 
   res.clearCookie("accessToken", CLEAR_COOKIE_OPTIONS);
   res.clearCookie("refreshToken", CLEAR_COOKIE_OPTIONS);
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      newEmail: result.newEmail,
+    },
   });
 };
 
 // [POST] Resend change email code
-export const resendChangeEmailCodeController: RequestHandler = async (req, res) => {
+export const resendChangeEmailCodeController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
-  const result = await authService.resendChangeEmailCode(userId);
+  const result = await authService.resendChangeEmailCode(
+    userId,
+    req.language as "fa" | "en",
+  );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      newEmail: result.newEmail,
+    },
   });
 };

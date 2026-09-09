@@ -51,7 +51,7 @@ export const validate = (schema: ZodSchema) => {
 
         return next(
           new AppError(
-            "خطا در اعتبارسنجی داده‌های ورودی",
+            "common.validationError",
             400,
             formattedErrors,
           ),

@@ -6,6 +6,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js";
+import { i18next, middleware } from "./lib/i18n.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import cartRoutes from "./modules/cart/cart.routes.js";
@@ -73,6 +74,9 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// [MW] i18n middleware
+app.use(middleware.handle(i18next));
 
 // [MW] Static files
 app.use(express.static("public"));
