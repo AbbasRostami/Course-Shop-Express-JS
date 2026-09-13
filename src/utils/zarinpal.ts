@@ -9,6 +9,7 @@ const MERCHANT_ID = process.env.ZARINPAL_MERCHANT_ID;
 if (!MERCHANT_ID) {
   throw new Error("❌ ZARINPAL_MERCHANT_ID is not defined in .env");
 }
+
 export interface ZarinPalRequestPayload {
   amount: number;
   description: string;
@@ -45,47 +46,24 @@ export interface ZarinPalVerifyResult {
   errorCode?: number;
 }
 
-const getErrorMessage = (code: number): string => {
+// [UTIL] Map ZarinPal error codes to localization keys
+const getErrorMessageKey = (code: number): string => {
   const errors: Record<number, string> = {
-    [-9]: "خطای اعتبارسنجی (داده‌های ارسالی نامعتبر)",
-    [-10]: "آی‌پی یا مرچنت کد پذیرنده صحیح نیست",
-    [-11]: "مرچنت کد فعال نیست",
-    [-12]: "تلاش بیش از حد در یک بازه زمانی کوتاه",
-    // [-13]: "محدودیت تراکنش",
-    [-14]: "آدرس بازگشت با دامنه ثبت شده مغایرت دارد",
-    // [-15]: "درگاه پرداخت به حالت تعلیق درآمده است",
-    // [-16]: "سطح تایید پذیرنده پایین‌تر از سطح نقره‌ای است",
-    // [-17]: "محدودیت پذیرنده در سطح آبی",
-    // [-18]: "امکان استفاده از کد درگاه اختصاصی در سایت دیگر را ندارید",
-    // [-19]: "امکان ایجاد تراکنش برای این ترمینال امکان‌پذیر نیست",
-
-    // [-30]: "پذیرنده اجازه دسترسی به تسویه شناور را ندارد",
-    // [-31]: "حساب بانکی تسویه را به پنل اضافه کنید",
-    // [-32]: "مبلغ تسهیم از مبلغ کل بیشتر است",
-    // [-33]: "درصدهای تسهیم اشتباه است",
-    // [-34]: "مبلغ تسهیم از مبلغ کل بیشتر است",
-    // [-35]: "تعداد افراد دریافت‌کننده تسهیم بیش از حد مجاز است",
-    // [-36]: "حداقل مبلغ جهت تسهیم باید ۱۰۰۰۰ ریال باشد",
-    // [-37]: "یک یا چند شماره شبا غیرفعال است",
-    // [-38]: "عدم تعریف صحیح شبا",
-    // [-39]: "خطا در تسهیم",
-    // [-40]: "پارامترهای اضافی نامعتبر است",
-    [-41]: "حداکثر مبلغ پرداختی ۱۰۰ میلیون تومان است",
-
-    [-50]: "مبلغ پرداخت شده با مبلغ ارسالی متفاوت است",
-    [-51]: "پرداخت ناموفق",
-    [-52]: "خطای غیرمنتظره",
-    [-53]: "پرداخت متعلق به این مرچنت کد نیست",
-    [-54]: "اتوریتی نامعتبر است",
-    [-55]: "تراکنش مورد نظر یافت نشد",
-
-    // [-60]: "امکان ریورس کردن تراکنش با بانک وجود ندارد",
-    // [-61]: "تراکنش موفق نیست یا قبلاً ریورس شده است",
-    // [-62]: "آی‌پی درگاه ست نشده است",
-    // [-63]: "حداکثر زمان برای ریورس منقضی شده است",
+    [-9]: "zarinpal.errors.validation",
+    [-10]: "zarinpal.errors.invalidMerchant",
+    [-11]: "zarinpal.errors.inactiveMerchant",
+    [-12]: "zarinpal.errors.tooManyRequests",
+    [-14]: "zarinpal.errors.invalidCallback",
+    [-41]: "zarinpal.errors.maxAmountExceeded",
+    [-50]: "zarinpal.errors.amountMismatch",
+    [-51]: "zarinpal.errors.failed",
+    [-52]: "zarinpal.errors.unexpected",
+    [-53]: "zarinpal.errors.merchantMismatch",
+    [-54]: "zarinpal.errors.invalidAuthority",
+    [-55]: "zarinpal.errors.transactionNotFound",
   };
 
-  return errors[code] || `خطای ناشناخته (کد: ${code})`;
+  return errors[code] || "zarinpal.errors.unknown";
 };
 
 export const requestPayment = async (
@@ -115,7 +93,7 @@ export const requestPayment = async (
     if (!response.ok) {
       return {
         success: false,
-        error: `خطای HTTP از درگاه پرداخت: ${response.status}`,
+        error: "zarinpal.errors.httpError",
       };
     }
     const result = await response.json();
@@ -132,14 +110,14 @@ export const requestPayment = async (
     const errorCode = result.errors?.code || result.data?.code || -999;
     return {
       success: false,
-      error: getErrorMessage(errorCode),
+      error: getErrorMessageKey(errorCode),
       errorCode,
     };
   } catch (error) {
     console.error("❌ ZarinPal request error:", error);
     return {
       success: false,
-      error: "خطا در ارتباط با درگاه پرداخت",
+      error: "zarinpal.errors.connectionError",
     };
   }
 };
@@ -164,7 +142,7 @@ export const verifyPayment = async (
     if (!response.ok) {
       return {
         success: false,
-        error: `خطای HTTP از درگاه پرداخت: ${response.status}`,
+        error: "zarinpal.errors.httpError",
       };
     }
     const result = await response.json();
@@ -195,14 +173,14 @@ export const verifyPayment = async (
     const errorCode = result.errors?.code || result.data?.code || -999;
     return {
       success: false,
-      error: getErrorMessage(errorCode),
+      error: getErrorMessageKey(errorCode),
       errorCode,
     };
   } catch (error) {
     console.error("❌ ZarinPal verify error:", error);
     return {
       success: false,
-      error: "خطا در تأیید پرداخت",
+      error: "zarinpal.errors.verificationError",
     };
   }
 };
