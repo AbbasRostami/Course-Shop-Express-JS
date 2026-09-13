@@ -2,24 +2,24 @@ import { z } from "zod";
 
 // [VALID] Course level enum
 const courseLevelEnum = z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"], {
-  error: "سطح دوره باید یکی از موارد زیر باشد: BEGINNER, INTERMEDIATE, ADVANCED",
+  error: "course.validation.levelInvalid",
 });
 
 // [VALID] Coerce price to integer
 const coerceNumber = z.coerce
-  .number({ error: "قیمت باید عدد باشد" })
-  .int("قیمت باید عدد صحیح باشد")
-  .min(0, "قیمت نمی‌تواند منفی باشد")
-  .max(1000000000, "قیمت بیش از حد بزرگ است");
+  .number({ error: "course.validation.priceType" })
+  .int("course.validation.priceInt")
+  .min(0, "course.validation.priceMin")
+  .max(1000000000, "course.validation.priceMax");
 
-// [VALID] Coerce string "true"/"false" to boolean
+// [VALID] Coerce boolean
 const coerceBoolean = z.preprocess(
   (val) => {
     if (val === "true" || val === true) return true;
     if (val === "false" || val === false) return false;
     return val;
   },
-  z.boolean({ error: "وضعیت انتشار باید boolean باشد" }),
+  z.boolean({ error: "course.validation.publishedBoolean" }),
 );
 
 // [VALID] Normalize category slugs to array
@@ -34,24 +34,34 @@ const categoriesSchema = z
 // [VALID] Create course schema
 export const createCourseSchema = z.object({
   body: z.object({
-    title: z
-      .string({ error: "عنوان دوره الزامی است" })
-      .min(3, "عنوان دوره باید حداقل ۳ کاراکتر باشد")
-      .max(150, "عنوان دوره نباید بیشتر از ۱۵۰ کاراکتر باشد")
-      .trim(),
-    description: z
-      .string()
-      .max(5000, "توضیحات نباید بیشتر از ۵۰۰۰ کاراکتر باشد")
+    titleFa: z
+      .string({ error: "course.validation.titleRequired" })
       .trim()
+      .min(3, "course.validation.titleMin")
+      .max(150, "course.validation.titleMax"),
+    titleEn: z
+      .string({ error: "course.validation.titleRequired" })
+      .trim()
+      .min(3, "course.validation.titleMin")
+      .max(150, "course.validation.titleMax"),
+    descriptionFa: z
+      .string()
+      .trim()
+      .max(5000, "course.validation.descriptionMax")
+      .optional(),
+    descriptionEn: z
+      .string()
+      .trim()
+      .max(5000, "course.validation.descriptionMax")
       .optional(),
     price: coerceNumber,
     teacherId: z
-      .string({ message: "شناسه مدرس الزامی است" })
-      .uuid("شناسه مدرس نامعتبر است"),
+      .string({ message: "course.validation.teacherIdRequired" })
+      .uuid("course.validation.teacherIdInvalid"),
     level: courseLevelEnum.optional().default("BEGINNER"),
     categoryId: z
-      .string({ message: "شناسه دسته‌بندی الزامی است" })
-      .uuid("شناسه دسته‌بندی نامعتبر است"),
+      .string({ message: "course.validation.categoryIdRequired" })
+      .uuid("course.validation.categoryIdInvalid"),
     published: coerceBoolean.optional().default(false),
   }),
 });
@@ -59,24 +69,38 @@ export const createCourseSchema = z.object({
 // [VALID] Update course schema
 export const updateCourseSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("course.validation.idInvalid"),
   }),
   body: z.object({
-    title: z
+    titleFa: z
       .string()
-      .min(3, "عنوان دوره باید حداقل ۳ کاراکتر باشد")
-      .max(150, "عنوان دوره نباید بیشتر از ۱۵۰ کاراکتر باشد")
       .trim()
+      .min(3, "course.validation.titleMin")
+      .max(150, "course.validation.titleMax")
       .optional(),
-    description: z
+    titleEn: z
       .string()
-      .max(5000, "توضیحات نباید بیشتر از ۵۰۰۰ کاراکتر باشد")
       .trim()
+      .min(3, "course.validation.titleMin")
+      .max(150, "course.validation.titleMax")
       .optional(),
-    teacherId: z.string().uuid("شناسه مدرس نامعتبر است").optional(),
+    descriptionFa: z
+      .string()
+      .trim()
+      .max(5000, "course.validation.descriptionMax")
+      .optional(),
+    descriptionEn: z
+      .string()
+      .trim()
+      .max(5000, "course.validation.descriptionMax")
+      .optional(),
+    teacherId: z.string().uuid("course.validation.teacherIdInvalid").optional(),
     price: coerceNumber.optional(),
     level: courseLevelEnum.optional(),
-    categoryId: z.string().uuid("شناسه دسته‌بندی نامعتبر است").optional(),
+    categoryId: z
+      .string()
+      .uuid("course.validation.categoryIdInvalid")
+      .optional(),
     published: coerceBoolean.optional(),
   }),
 });
@@ -84,38 +108,44 @@ export const updateCourseSchema = z.object({
 // [VALID] Delete course schema
 export const deleteCourseSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("course.validation.idInvalid"),
   }),
 });
 
 // [VALID] Toggle publish schema
 export const togglePublishSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("course.validation.idInvalid"),
   }),
   body: z.object({
-    published: z.boolean({ error: "وضعیت انتشار باید boolean باشد" }),
+    published: z.boolean({ error: "course.validation.publishedBoolean" }),
   }),
 });
 
 // [VALID] Get course by slug schema
 export const getCourseBySlugSchema = z.object({
   params: z.object({
-    slug: z.string().min(1, "slug الزامی است").max(200),
+    slug: z.string().min(1, "course.validation.slugRequired").max(200),
   }),
 });
 
 // [VALID] Public list courses schema
 export const listCoursesPublicSchema = z.object({
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z.string().regex(/^\d+$/, "course.validation.pageNumber").optional(),
+    limit: z.string().regex(/^\d+$/, "course.validation.limitNumber").optional(),
     categories: categoriesSchema,
     level: courseLevelEnum.optional(),
-    minPrice: z.string().regex(/^\d+$/, "minPrice باید عدد باشد").optional(),
-    maxPrice: z.string().regex(/^\d+$/, "maxPrice باید عدد باشد").optional(),
+    minPrice: z
+      .string()
+      .regex(/^\d+$/, "course.validation.minPriceNumber")
+      .optional(),
+    maxPrice: z
+      .string()
+      .regex(/^\d+$/, "course.validation.maxPriceNumber")
+      .optional(),
     search: z.string().max(100).optional(),
-    sortBy: z.enum(["createdAt", "price", "title"]).optional(),
+    sortBy: z.enum(["createdAt", "price", "titleFa", "titleEn"]).optional(),
     order: z.enum(["asc", "desc"]).optional(),
   }),
 });
@@ -123,13 +153,13 @@ export const listCoursesPublicSchema = z.object({
 // [VALID] Admin list courses schema
 export const listCoursesAdminSchema = z.object({
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z.string().regex(/^\d+$/, "course.validation.pageNumber").optional(),
+    limit: z.string().regex(/^\d+$/, "course.validation.limitNumber").optional(),
     categories: categoriesSchema,
     level: courseLevelEnum.optional(),
     published: z.enum(["true", "false"]).optional(),
     search: z.string().max(100).optional(),
-    sortBy: z.enum(["createdAt", "price", "title"]).optional(),
+    sortBy: z.enum(["createdAt", "price", "titleFa", "titleEn"]).optional(),
     order: z.enum(["asc", "desc"]).optional(),
   }),
 });
@@ -137,5 +167,9 @@ export const listCoursesAdminSchema = z.object({
 export type CreateCourseInput = z.infer<typeof createCourseSchema>["body"];
 export type UpdateCourseInput = z.infer<typeof updateCourseSchema>["body"];
 export type TogglePublishInput = z.infer<typeof togglePublishSchema>["body"];
-export type ListCoursesPublicQuery = z.infer<typeof listCoursesPublicSchema>["query"];
-export type ListCoursesAdminQuery = z.infer<typeof listCoursesAdminSchema>["query"];
+export type ListCoursesPublicQuery = z.infer<
+  typeof listCoursesPublicSchema
+>["query"];
+export type ListCoursesAdminQuery = z.infer<
+  typeof listCoursesAdminSchema
+>["query"];

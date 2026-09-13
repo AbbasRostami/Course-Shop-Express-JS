@@ -21,31 +21,37 @@ export const courseWithCount = {
   },
 } satisfies Prisma.CourseInclude;
 
-// [DB] Include category info only
+// [DB] Include category info only (bilingual)
 export const courseWithCategory = {
   category: {
     select: {
       id: true,
-      name: true,
-      slug: true,
+      nameFa: true,
+      nameEn: true,
+      slugFa: true,
+      slugEn: true,
     },
   },
 } satisfies Prisma.CourseInclude;
 
-// [DB] Full course include - category, teacher, counts
+// [DB] Full course include - category, teacher, counts (bilingual)
 export const courseInclude = {
   category: {
     select: {
       id: true,
-      name: true,
-      slug: true,
+      nameFa: true,
+      nameEn: true,
+      slugFa: true,
+      slugEn: true,
     },
   },
   teacher: {
     select: {
       id: true,
-      name: true,
-      slug: true,
+      nameFa: true,
+      nameEn: true,
+      slugFa: true,
+      slugEn: true,
       avatar: true,
     },
   },

@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { AppError } from "../../utils/AppError.js";
 import { getUserIdFromRequest } from "../../utils/getUserIdFromRequest.js";
+import { localizePayload } from "../../utils/localize.js";
 import { courseService } from "./course.service.js";
 import {
   ListCoursesAdminQuery,
@@ -9,7 +10,6 @@ import {
 
 // [POST] Create course
 export const createCourseController: RequestHandler = async (req, res) => {
-  // [UPLOAD] Extract image URL if uploaded
   let imageUrl: string | undefined = undefined;
   if (req.file) {
     imageUrl = req.file.path;
@@ -23,24 +23,27 @@ export const createCourseController: RequestHandler = async (req, res) => {
   return res.status(201).json({
     status: "success",
     data: {
-      message: "دوره با موفقیت ایجاد شد",
-      course,
+      message: req.t("course.success.created"),
+      course: localizePayload(course, req.locale),
     },
   });
 };
 
 // [PUT] Update course
-export const updateCourseController: RequestHandler = async (req, res, next) => {
+export const updateCourseController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
   const id = req.params.id as string;
   const updateData: Record<string, unknown> = { ...req.body };
 
-  // [UPLOAD] Attach image URL if uploaded
   if (req.file?.path) {
     updateData.imageUrl = req.file.path;
   }
 
   if (Object.keys(updateData).length === 0) {
-    return next(new AppError("حداقل یک فیلد برای ویرایش ارسال کنید", 400));
+    return next(new AppError("course.errors.noUpdateData", 400));
   }
 
   const course = await courseService.updateCourse(id, updateData as any);
@@ -48,8 +51,8 @@ export const updateCourseController: RequestHandler = async (req, res, next) => 
   return res.status(200).json({
     status: "success",
     data: {
-      message: "دوره با موفقیت ویرایش شد",
-      course,
+      message: req.t("course.success.updated"),
+      course: localizePayload(course, req.locale),
     },
   });
 };
@@ -64,10 +67,10 @@ export const togglePublishController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: published
-        ? "دوره با موفقیت منتشر شد"
-        : "دوره با موفقیت پنهان شد",
-      course,
+      message: req.t(
+        published ? "course.success.published" : "course.success.hidden",
+      ),
+      course: localizePayload(course, req.locale),
     },
   });
 };
@@ -79,7 +82,7 @@ export const deleteCourseController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "دوره با موفقیت حذف شد" },
+    data: { message: req.t("course.success.deleted") },
   });
 };
 
@@ -94,7 +97,10 @@ export const getPublicCoursesController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -106,11 +112,14 @@ export const getAdminCoursesController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
-// [GET] Get course by slug
+// [GET] Get course by slug (works with Fa or En slug)
 export const getCourseBySlugController: RequestHandler = async (req, res) => {
   const slug = req.params.slug as string;
   const userId = getUserIdFromRequest(req);
@@ -119,6 +128,8 @@ export const getCourseBySlugController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { course },
+    data: {
+      course: localizePayload(course, req.locale),
+    },
   });
 };

@@ -5,31 +5,23 @@ export const courseSwagger = {
         tags: ["Course"],
         summary: "Get all public courses with filters",
         description:
-          "Returns published courses with category info. Supports filtering, search, sort and pagination. No authentication required.",
+          "Returns published courses. Supports filtering, search, sort and pagination. **Text fields are localized based on `Accept-Language` header. Search is performed on both Persian and English columns.**",
         parameters: [
           {
-            name: "page",
-            in: "query",
-            schema: { type: "string", example: "1" },
-            description: "page",
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          {
-            name: "limit",
-            in: "query",
-            schema: { type: "string", example: "10" },
-            description: "limit ( max:100 )",
-          },
+          { name: "page", in: "query", schema: { type: "string", example: "1" } },
+          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
           {
             name: "categories",
             in: "query",
-            schema: {
-              type: "array",
-              items: { type: "string" },
-            },
+            schema: { type: "array", items: { type: "string" } },
             style: "form",
             explode: true,
             description:
-              "Filter by categories. Example: ?categories=frontend&categories=backend",
+              "Filter by category slugs (Fa or En). Example: ?categories=frontend&categories=backend",
             example: ["frontend", "backend"],
           },
           {
@@ -39,35 +31,23 @@ export const courseSwagger = {
               type: "string",
               enum: ["BEGINNER", "INTERMEDIATE", "ADVANCED"],
             },
-            description: "Filter by Level",
           },
-          {
-            name: "minPrice",
-            in: "query",
-            schema: { type: "string" },
-            description: "Minimum price (in Rials)",
-          },
-          {
-            name: "maxPrice",
-            in: "query",
-            schema: { type: "string" },
-            description: "Maximum price (in Rials )",
-          },
+          { name: "minPrice", in: "query", schema: { type: "string" } },
+          { name: "maxPrice", in: "query", schema: { type: "string" } },
           {
             name: "search",
             in: "query",
             schema: { type: "string" },
-            description: "Search in title and description",
+            description: "Search across title and description (Fa + En)",
           },
           {
             name: "sortBy",
             in: "query",
             schema: {
               type: "string",
-              enum: ["createdAt", "price", "title"],
+              enum: ["createdAt", "price", "titleFa", "titleEn"],
               default: "createdAt",
             },
-            description: "Sort by",
           },
           {
             name: "order",
@@ -77,7 +57,6 @@ export const courseSwagger = {
               enum: ["asc", "desc"],
               default: "desc",
             },
-            description: "Order of sorting",
           },
         ],
         responses: {
@@ -112,33 +91,17 @@ export const courseSwagger = {
                           avatar:
                             "https://res.cloudinary.com/.../teachers/avatar.jpg",
                         },
-                        stats: {
-                          enrollments: 25,
-                          comments: 12,
-                        },
+                        stats: { enrollments: 25, comments: 12 },
                         reactions: {
                           likes: 45,
                           dislikes: 3,
                           myReaction: null,
                         },
+                        isEnrolled: false,
+                        isFavorite: false,
                       },
                     ],
                     pagination: { page: 1, limit: 10, total: 50 },
-                  },
-                },
-              },
-            },
-          },
-          400: {
-            description: "Validation error in query parameters",
-            content: {
-              "application/json": {
-                example: {
-                  status: "fail",
-                  data: {
-                    page: "page باید عدد باشد",
-                    level:
-                      "سطح دوره باید یکی از موارد زیر باشد: BEGINNER, INTERMEDIATE, ADVANCED",
                   },
                 },
               },
@@ -149,7 +112,8 @@ export const courseSwagger = {
       post: {
         tags: ["Course"],
         summary: "Create new course (Admin)",
-        description: "Must be submitted as **multipart/form-data**.",
+        description:
+          "Must be submitted as **multipart/form-data**. Both Persian and English fields are required.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         requestBody: {
           required: true,
@@ -157,25 +121,41 @@ export const courseSwagger = {
             "multipart/form-data": {
               schema: {
                 type: "object",
-                required: ["title", "price", "teacherId", "categoryId"],
+                required: [
+                  "titleFa",
+                  "titleEn",
+                  "price",
+                  "teacherId",
+                  "categoryId",
+                ],
                 properties: {
-                  title: {
+                  titleFa: {
                     type: "string",
                     minLength: 3,
                     maxLength: 150,
                     example: "آموزش React پیشرفته",
                   },
-                  description: {
+                  titleEn: {
+                    type: "string",
+                    minLength: 3,
+                    maxLength: 150,
+                    example: "Advanced React Course",
+                  },
+                  descriptionFa: {
                     type: "string",
                     maxLength: 5000,
                     example: "یادگیری کامل React با Next.js",
+                  },
+                  descriptionEn: {
+                    type: "string",
+                    maxLength: 5000,
+                    example: "Complete guide to React with Next.js",
                   },
                   price: {
                     type: "number",
                     minimum: 0,
                     maximum: 1000000000,
                     example: 5000000,
-                    description: "قیمت به ریال (0 = رایگان)",
                   },
                   level: {
                     type: "string",
@@ -209,7 +189,7 @@ export const courseSwagger = {
         },
         responses: {
           201: {
-            description: "Course is created successfully.",
+            description: "Course created successfully.",
             content: {
               "application/json": {
                 example: {
@@ -226,24 +206,18 @@ export const courseSwagger = {
                         "https://res.cloudinary.com/.../courses/course.jpg",
                       level: "INTERMEDIATE",
                       published: false,
-                      createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:00:00.000Z",
                       teacher: {
                         id: "59b31b70-bc67-4651-a4ac-7df76528b9b2",
                         name: "عباس رستمی",
                         slug: "abbas-rostami",
-                        avatar:
-                          "https://res.cloudinary.com/.../teachers/avatar.jpg",
+                        avatar: null,
                       },
                       category: {
                         id: "cat-uuid",
                         name: "فرانت‌اند",
                         slug: "فرانت-اند",
                       },
-                      stats: {
-                        enrollments: 0,
-                        comments: 0,
-                      },
+                      stats: { enrollments: 0, comments: 0 },
                     },
                   },
                 },
@@ -253,50 +227,15 @@ export const courseSwagger = {
           400: {
             description: `Invalid request - Validation rules:
 
-- title:
-  - Must not be empty.
-  - Must be a string.
-  - Min length: 3.
-  - Max length: 150.
-
-- description:
-  - Optional.
-  - Must be a string.
-  - Max length: 5000.
-
-- price:
-  - Must not be empty.
-  - Must be a number.
-  - Must be an integer.
-  - Minimum: 0.
-  - Maximum: 1000000000.
-
-- teacherId:
-  - Must not be empty.
-  - Must be a valid UUID v4.
-  - Teacher must exist in the system.
-
-- level:
-  - Optional.
-  - Must be one of: BEGINNER, INTERMEDIATE, ADVANCED.
-  - Default: BEGINNER.
-
-- categoryId:
-  - Must not be empty.
-  - Must be a valid UUID v4.
-  - Category must exist in the system.
-
-- published:
-  - Optional.
-  - Must be a boolean.
-  - Default: false.
-
-- image:
-  - Optional.
-  - Max size: 5 MB.
-  - Allowed formats: .jpg, .jpeg, .png, .webp.
-
-- Duplicate title, invalid category or invalid teacher may also return 400.`,
+- titleFa & titleEn: Required. Min 3, Max 150.
+- descriptionFa & descriptionEn: Optional. Max 5000.
+- price: Required. Integer. Min 0, Max 1,000,000,000.
+- teacherId: Required UUID. Teacher must exist.
+- categoryId: Required UUID. Category must exist.
+- level: Optional enum.
+- published: Optional boolean.
+- image: Optional. Max 5 MB.
+- Duplicate titles return 400.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -308,33 +247,24 @@ export const courseSwagger = {
       get: {
         tags: ["Course"],
         summary: "Get all courses - Admin",
-        description: "Returns all courses (including unpublished/draft)",
+        description:
+          "Returns all courses (including unpublished/draft). Text fields localized based on `Accept-Language` header.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
-            name: "page",
-            in: "query",
-            schema: { type: "string", example: "1" },
-            description: "page",
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          {
-            name: "limit",
-            in: "query",
-            schema: { type: "string", example: "10" },
-            description: "limit",
-          },
+          { name: "page", in: "query", schema: { type: "string" } },
+          { name: "limit", in: "query", schema: { type: "string" } },
           {
             name: "categories",
             in: "query",
-            schema: {
-              type: "array",
-              items: { type: "string" },
-            },
+            schema: { type: "array", items: { type: "string" } },
             style: "form",
             explode: true,
-            description:
-              "فیلتر بر اساس چند  دسته با  slug. مثال: ?categories=frontend&categories=backend",
-            example: ["frontend", "backend"],
+            description: "Filter by category slugs (Fa or En).",
           },
           {
             name: "level",
@@ -343,26 +273,19 @@ export const courseSwagger = {
               type: "string",
               enum: ["BEGINNER", "INTERMEDIATE", "ADVANCED"],
             },
-            description: "Filter by Level",
           },
           {
             name: "published",
             in: "query",
             schema: { type: "string", enum: ["true", "false"] },
-            description: "Filter by published status",
           },
-          {
-            name: "search",
-            in: "query",
-            schema: { type: "string" },
-            description: "Search in title and description",
-          },
+          { name: "search", in: "query", schema: { type: "string" } },
           {
             name: "sortBy",
             in: "query",
             schema: {
               type: "string",
-              enum: ["createdAt", "price", "title"],
+              enum: ["createdAt", "price", "titleFa", "titleEn"],
             },
           },
           {
@@ -373,42 +296,13 @@ export const courseSwagger = {
         ],
         responses: {
           200: {
-            description: "List of All Courses.",
+            description: "List of all courses.",
             content: {
               "application/json": {
                 example: {
                   status: "success",
                   data: {
-                    items: [
-                      {
-                        id: "d3b07384-d113-4956-a5cc-484443028456",
-                        title: "آموزش React پیشرفته",
-                        slug: "آموزش-react-پیشرفته",
-                        description: "...",
-                        price: 5000000,
-                        imageUrl: "/uploads/courses/course-uuid.jpg",
-                        level: "INTERMEDIATE",
-                        published: false,
-                        createdAt: "2026-01-15T14:00:00.000Z",
-                        updatedAt: "2026-01-15T14:00:00.000Z",
-                        teacher: {
-                          id: "teacher-uuid",
-                          name: "عباس رستمی",
-                          slug: "abbas-rostami",
-                          avatar:
-                            "https://res.cloudinary.com/.../teachers/avatar.jpg",
-                        },
-                        category: {
-                          id: "cat-uuid",
-                          name: "فرانت‌اند",
-                          slug: "فرانت-اند",
-                        },
-                        stats: {
-                          enrollments: 0,
-                          comments: 0,
-                        },
-                      },
-                    ],
+                    items: [],
                     pagination: { page: 1, limit: 10, total: 75 },
                   },
                 },
@@ -424,21 +318,25 @@ export const courseSwagger = {
     "/api/courses/{slug}": {
       get: {
         tags: ["Course"],
-        summary: "Get course by slug",
+        summary: "Get course by slug (Fa or En)",
         description:
-          "Returns a single published course. Only returns courses where category is active (show=true).",
+          "Returns a single published course. **Slug can be Persian or English.**",
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "slug",
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "slug",
           },
         ],
         responses: {
           200: {
-            description: "Course is Fetched Successfully.",
+            description: "Course details.",
             content: {
               "application/json": {
                 example: {
@@ -453,29 +351,26 @@ export const courseSwagger = {
                       imageUrl: "/uploads/courses/course-uuid.jpg",
                       level: "INTERMEDIATE",
                       published: true,
-                      createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:00:00.000Z",
                       teacher: {
                         id: "teacher-uuid",
                         name: "عباس رستمی",
                         slug: "abbas-rostami",
-                        avatar:
-                          "https://res.cloudinary.com/.../teachers/avatar.jpg",
+                        avatar: null,
                       },
                       category: {
                         id: "cat-uuid",
                         name: "فرانت‌اند",
                         slug: "فرانت-اند",
                       },
-                      stats: {
-                        enrollments: 125,
-                        comments: 45,
-                      },
+                      stats: { enrollments: 125, comments: 45 },
                       reactions: {
                         likes: 45,
                         dislikes: 3,
                         myReaction: null,
                       },
+                      isEnrolled: false,
+                      enrollment: null,
+                      isFavorite: false,
                     },
                   },
                 },
@@ -492,7 +387,7 @@ export const courseSwagger = {
         tags: ["Course"],
         summary: "Update course (Admin)",
         description:
-          "Must be submitted as **multipart/form-data**. All fields optional. If title changes, slug is auto-regenerated. If new image is uploaded, old image is deleted. To remove category or teacher, send null.",
+          "Must be submitted as **multipart/form-data**. All fields optional. If a title changes, its slug is auto-regenerated.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -509,41 +404,23 @@ export const courseSwagger = {
               schema: {
                 type: "object",
                 properties: {
-                  title: {
-                    type: "string",
-                    minLength: 3,
-                    maxLength: 150,
-                  },
-                  description: {
-                    type: "string",
-                    maxLength: 5000,
-                  },
+                  titleFa: { type: "string", minLength: 3, maxLength: 150 },
+                  titleEn: { type: "string", minLength: 3, maxLength: 150 },
+                  descriptionFa: { type: "string", maxLength: 5000 },
+                  descriptionEn: { type: "string", maxLength: 5000 },
                   price: {
                     type: "number",
                     minimum: 0,
                     maximum: 1000000000,
-                    example: 6000000,
                   },
                   level: {
                     type: "string",
                     enum: ["BEGINNER", "INTERMEDIATE", "ADVANCED"],
                   },
-                  categoryId: {
-                    type: "string",
-                    format: "uuid",
-                  },
-                  teacherId: {
-                    type: "string",
-                    format: "uuid",
-                  },
-                  published: {
-                    type: "boolean",
-                    example: true,
-                  },
-                  image: {
-                    type: "string",
-                    format: "binary",
-                  },
+                  categoryId: { type: "string", format: "uuid" },
+                  teacherId: { type: "string", format: "uuid" },
+                  published: { type: "boolean" },
+                  image: { type: "string", format: "binary" },
                 },
               },
             },
@@ -551,42 +428,13 @@ export const courseSwagger = {
         },
         responses: {
           200: {
-            description: "Course is Edited Successfully.",
+            description: "Course updated successfully.",
             content: {
               "application/json": {
                 example: {
                   status: "success",
                   data: {
                     message: "دوره با موفقیت ویرایش شد",
-                    course: {
-                      id: "d3b07384-d113-4956-a5cc-484443028456",
-                      title: "آموزش React پیشرفته (نسخه ۲)",
-                      slug: "آموزش-react-پیشرفته-نسخه-2",
-                      description: "توضیحات بروزرسانی شده",
-                      price: 6000000,
-                      imageUrl:
-                        "https://res.cloudinary.com/.../courses/course-new.jpg",
-                      level: "INTERMEDIATE",
-                      published: true,
-                      createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T15:00:00.000Z",
-                      teacher: {
-                        id: "59b31b70-bc67-4651-a4ac-7df76528b9b2",
-                        name: "عباس رستمی",
-                        slug: "abbas-rostami",
-                        avatar:
-                          "https://res.cloudinary.com/.../teachers/avatar.jpg",
-                      },
-                      category: {
-                        id: "cat-uuid",
-                        name: "فرانت‌اند",
-                        slug: "فرانت-اند",
-                      },
-                      stats: {
-                        enrollments: 125,
-                        comments: 45,
-                      },
-                    },
                   },
                 },
               },
@@ -595,64 +443,26 @@ export const courseSwagger = {
           400: {
             description: `Invalid request - Validation rules:
 
-- id (path):
-  - Must be a valid UUID v4.
-
-- title:
-  - Optional.
-  - Must be a string.
-  - Min length: 3.
-  - Max length: 150.
-
-- description:
-  - Optional.
-  - Must be a string.
-  - Max length: 5000.
-
-- price:
-  - Optional.
-  - Must be a number.
-  - Must be an integer.
-  - Minimum: 0.
-  - Maximum: 1000000000.
-
-- teacherId:
-  - Optional.
-  - Must be a valid UUID v4.
-  - Teacher must exist in the system.
-
-- level:
-  - Optional.
-  - Must be one of: BEGINNER, INTERMEDIATE, ADVANCED.
-
-- categoryId:
-  - Optional.
-  - Must be a valid UUID v4 or null.
-  - Send null to remove category.
-
-- published:
-  - Optional.
-  - Must be a boolean.
-
-- image:
-  - Optional.
-  - Max size: 5 MB.
-  - Allowed formats: .jpg, .jpeg, .png, .webp.
-
-- At least one field is required.
-- Duplicate title, invalid category or invalid teacher may also return 400.`,
+- id (path): Must be a valid UUID v4.
+- titleFa/titleEn: Optional. Min 3, Max 150.
+- descriptionFa/descriptionEn: Optional. Max 5000.
+- price: Optional integer.
+- teacherId/categoryId: Optional UUID.
+- level: Optional enum.
+- published: Optional boolean.
+- image: Optional. Max 5 MB.
+- At least one field required.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
           404: { description: "Course not found." },
         },
       },
-
       delete: {
         tags: ["Course"],
         summary: "Delete course (Admin)",
         description:
-          "Permanently deletes a course and its image file. All enrollments, comments, reactions and favorites will be cascade deleted.",
+          "Permanently deletes a course and its image. All related data is cascade-deleted.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -664,14 +474,12 @@ export const courseSwagger = {
         ],
         responses: {
           200: {
-            description: "Course is Deleted Successfuly.",
+            description: "Course deleted successfully.",
             content: {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "دوره با موفقیت حذف شد",
-                  },
+                  data: { message: "دوره با موفقیت حذف شد" },
                 },
               },
             },
@@ -688,7 +496,7 @@ export const courseSwagger = {
         tags: ["Course"],
         summary: "Toggle course publish status (Admin)",
         description:
-          "Publishes or unpublishes a course. Cannot publish a course if its category is hidden (show=false). Cannot toggle to current state.",
+          "Publishes or unpublishes a course. Cannot publish a course if its category is hidden.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -706,11 +514,7 @@ export const courseSwagger = {
                 type: "object",
                 required: ["published"],
                 properties: {
-                  published: {
-                    type: "boolean",
-                    description: "true = منتشر، false = پنهان",
-                    example: true,
-                  },
+                  published: { type: "boolean", example: true },
                 },
               },
             },
@@ -718,65 +522,23 @@ export const courseSwagger = {
         },
         responses: {
           200: {
-            description: "وضعیت انتشار با موفقیت تغییر کرد.",
+            description: "Publish status changed successfully.",
             content: {
               "application/json": {
                 examples: {
                   published: {
-                    summary: "انتشار",
                     value: {
                       status: "success",
                       data: {
                         message: "دوره با موفقیت منتشر شد",
-                        course: {
-                          id: "d3b07384-d113-4956-a5cc-484443028456",
-                          title: "آموزش React پیشرفته",
-                          slug: "آموزش-react-پیشرفته",
-                          published: true,
-                          createdAt: "2026-01-15T14:00:00.000Z",
-                          updatedAt: "2026-01-15T15:00:00.000Z",
-                          teacher: {
-                            id: "teacher-uuid",
-                            name: "عباس رستمی",
-                            slug: "abbas-rostami",
-                            avatar: null,
-                          },
-                          category: {
-                            id: "cat-uuid",
-                            name: "فرانت‌اند",
-                            slug: "فرانت-اند",
-                          },
-                          stats: {
-                            enrollments: 25,
-                            comments: 12,
-                          },
-                        },
                       },
                     },
                   },
                   unpublished: {
-                    summary: "پنهان‌سازی",
                     value: {
                       status: "success",
                       data: {
                         message: "دوره با موفقیت پنهان شد",
-                        course: {
-                          id: "d3b07384-d113-4956-a5cc-484443028456",
-                          title: "آموزش React پیشرفته",
-                          slug: "آموزش-react-پیشرفته",
-                          published: false,
-                          createdAt: "2026-01-15T14:00:00.000Z",
-                          updatedAt: "2026-01-15T15:00:00.000Z",
-                          category: {
-                            id: "cat-uuid",
-                            name: "فرانت‌اند",
-                            slug: "فرانت-اند",
-                          },
-                          stats: {
-                            enrollments: 25,
-                            comments: 12,
-                          },
-                        },
                       },
                     },
                   },
@@ -785,42 +547,23 @@ export const courseSwagger = {
             },
           },
           400: {
-            description: "وضعیت تکراری یا دسته‌بندی غیرفعال.",
+            description: "Invalid publish state or category disabled.",
             content: {
               "application/json": {
                 examples: {
                   alreadyPublished: {
-                    summary: "از قبل منتشر شده",
                     value: {
                       status: "error",
                       message: "دوره از قبل منتشر شده است",
                       code: 400,
                     },
                   },
-                  alreadyUnpublished: {
-                    summary: "از قبل پنهان است",
-                    value: {
-                      status: "error",
-                      message: "دوره از قبل پنهان است",
-                      code: 400,
-                    },
-                  },
                   categoryDisabled: {
-                    summary: "دسته‌بندی غیرفعال",
                     value: {
                       status: "error",
                       message:
                         "نمی‌توان دوره را منتشر کرد چون دسته‌بندی آن غیرفعال است",
                       code: 400,
-                    },
-                  },
-                  invalidType: {
-                    summary: "نوع نامعتبر",
-                    value: {
-                      status: "fail",
-                      data: {
-                        published: "وضعیت انتشار باید boolean باشد",
-                      },
                     },
                   },
                 },

@@ -40,14 +40,14 @@ const formatCourse = (course: CourseWithRelations) => {
 const formatCourses = (courses: CourseWithRelations[]): CourseWithStats[] =>
   courses.map(formatCourse);
 
-// [ERROR] Handle duplicate title (P2002)
+// [ERROR] Handle duplicate title/slug (P2002)
 const handleUniqueError = (error: unknown): never => {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   ) {
-    throw new AppError("دوره‌ای با این عنوان قبلاً ثبت شده است", 400, {
-      title: "این عنوان قبلاً استفاده شده است",
+    throw new AppError("course.errors.titleExists", 400, {
+      title: "course.errors.titleExists",
     });
   }
   throw error;
@@ -60,8 +60,8 @@ const validateCategoryExists = async (categoryId: string) => {
   });
 
   if (!category) {
-    throw new AppError("دسته‌بندی مورد نظر یافت نشد", 400, {
-      categoryId: "این دسته‌بندی وجود ندارد",
+    throw new AppError("course.errors.categoryNotFound", 400, {
+      categoryId: "course.errors.categoryNotFound",
     });
   }
 };
@@ -73,8 +73,8 @@ const validateTeacherExists = async (teacherId: string) => {
   });
 
   if (!teacher) {
-    throw new AppError("مدرس مورد نظر یافت نشد", 400, {
-      teacherId: "این مدرس وجود ندارد",
+    throw new AppError("course.errors.teacherNotFound", 400, {
+      teacherId: "course.errors.teacherNotFound",
     });
   }
 };
@@ -88,9 +88,12 @@ export const courseService = {
     try {
       const course = await prisma.course.create({
         data: {
-          title: data.title,
-          slug: createSlug(data.title),
-          description: data.description,
+          titleFa: data.titleFa,
+          titleEn: data.titleEn,
+          slugFa: createSlug(data.titleFa),
+          slugEn: createSlug(data.titleEn),
+          descriptionFa: data.descriptionFa,
+          descriptionEn: data.descriptionEn,
           price: data.price,
           level: data.level,
           imageUrl: data.imageUrl,
@@ -103,7 +106,6 @@ export const courseService = {
 
       return formatCourse(course);
     } catch (error) {
-      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -116,28 +118,30 @@ export const courseService = {
   async updateCourse(id: string, data: UpdateCourseInputWithImage) {
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
-      // [CLEANUP] Remove uploaded image if course not found
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("course.errors.notFound", 404);
     }
 
-    if (data.categoryId) {
-      await validateCategoryExists(data.categoryId);
-    }
-    if (data.teacherId) {
-      await validateTeacherExists(data.teacherId);
-    }
+    if (data.categoryId) await validateCategoryExists(data.categoryId);
+    if (data.teacherId) await validateTeacherExists(data.teacherId);
 
     const updateData: Prisma.CourseUpdateInput = {};
 
     // [LOGIC] Auto-generate slug on title change
-    if (data.title !== undefined) {
-      updateData.title = data.title;
-      updateData.slug = createSlug(data.title);
+    if (data.titleFa !== undefined) {
+      updateData.titleFa = data.titleFa;
+      updateData.slugFa = createSlug(data.titleFa);
     }
-    if (data.description !== undefined) updateData.description = data.description;
+    if (data.titleEn !== undefined) {
+      updateData.titleEn = data.titleEn;
+      updateData.slugEn = createSlug(data.titleEn);
+    }
+    if (data.descriptionFa !== undefined)
+      updateData.descriptionFa = data.descriptionFa;
+    if (data.descriptionEn !== undefined)
+      updateData.descriptionEn = data.descriptionEn;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.level !== undefined) updateData.level = data.level;
     if (data.published !== undefined) updateData.published = data.published;
@@ -147,9 +151,7 @@ export const courseService = {
     if (data.teacherId !== undefined) {
       updateData.teacher = { connect: { id: data.teacherId } };
     }
-    if (data.imageUrl) {
-      updateData.imageUrl = data.imageUrl;
-    }
+    if (data.imageUrl) updateData.imageUrl = data.imageUrl;
 
     try {
       const course = await prisma.course.update({
@@ -158,14 +160,12 @@ export const courseService = {
         include: courseInclude,
       });
 
-      // [CLEANUP] Remove old image after successful update
       if (data.imageUrl && existing.imageUrl) {
         await removeCloudinaryImage(existing.imageUrl);
       }
 
       return formatCourse(course);
     } catch (error) {
-      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -182,23 +182,20 @@ export const courseService = {
     });
 
     if (!existing) {
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("course.errors.notFound", 404);
     }
 
-    // [LOGIC] Prevent redundant toggle
     if (existing.published === published) {
       throw new AppError(
-        published ? "دوره از قبل منتشر شده است" : "دوره از قبل پنهان است",
+        published
+          ? "course.errors.alreadyPublished"
+          : "course.errors.alreadyHidden",
         400,
       );
     }
 
-    // [LOGIC] Block publish if category is hidden
     if (published && existing.category && !existing.category.show) {
-      throw new AppError(
-        "نمی‌توان دوره را منتشر کرد چون دسته‌بندی آن غیرفعال است",
-        400,
-      );
+      throw new AppError("course.errors.categoryHidden", 400);
     }
 
     const course = await prisma.course.update({
@@ -215,12 +212,11 @@ export const courseService = {
     const existing = await prisma.course.findUnique({ where: { id } });
 
     if (!existing) {
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("course.errors.notFound", 404);
     }
 
     await prisma.course.delete({ where: { id } });
 
-    // [CLEANUP] Remove image from Cloudinary
     if (existing.imageUrl) {
       await removeCloudinaryImage(existing.imageUrl);
     }
@@ -237,26 +233,31 @@ export const courseService = {
 
     if (query.categories && query.categories.length > 0) {
       where.category = {
-        slug: { in: query.categories },
+        OR: [
+          { slugFa: { in: query.categories } },
+          { slugEn: { in: query.categories } },
+        ],
         show: true,
       };
     }
 
     if (query.level) where.level = query.level;
 
-    // [LOGIC] Price range filter
     if (query.minPrice || query.maxPrice) {
       where.price = {};
       if (query.minPrice) where.price.gte = Number(query.minPrice);
       if (query.maxPrice) where.price.lte = Number(query.maxPrice);
     }
 
+    // [LOGIC] Bilingual search (Fa + En)
     if (query.search) {
       where.AND = [
         {
           OR: [
-            { title: { contains: query.search, mode: "insensitive" } },
-            { description: { contains: query.search, mode: "insensitive" } },
+            { titleFa: { contains: query.search, mode: "insensitive" } },
+            { titleEn: { contains: query.search, mode: "insensitive" } },
+            { descriptionFa: { contains: query.search, mode: "insensitive" } },
+            { descriptionEn: { contains: query.search, mode: "insensitive" } },
           ],
         },
       ];
@@ -267,14 +268,19 @@ export const courseService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.course.findMany({ where, skip, take, orderBy, include: courseInclude }),
+      prisma.course.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        include: courseInclude,
+      }),
       prisma.course.count({ where }),
     ]);
 
     const formattedCourses = formatCourses(items);
     const courseIds = formattedCourses.map((c) => c.id);
 
-    // [DB] Load enrollment, reactions, favorites in parallel
     const [enrolledIds, reactionMap, favoriteIds] = await Promise.all([
       userId && courseIds.length > 0
         ? prisma.enrollment
@@ -321,7 +327,12 @@ export const courseService = {
     const where: Prisma.CourseWhereInput = {};
 
     if (query.categories && query.categories.length > 0) {
-      where.category = { slug: { in: query.categories } };
+      where.category = {
+        OR: [
+          { slugFa: { in: query.categories } },
+          { slugEn: { in: query.categories } },
+        ],
+      };
     }
 
     if (query.level) where.level = query.level;
@@ -332,8 +343,10 @@ export const courseService = {
 
     if (query.search) {
       where.OR = [
-        { title: { contains: query.search, mode: "insensitive" } },
-        { description: { contains: query.search, mode: "insensitive" } },
+        { titleFa: { contains: query.search, mode: "insensitive" } },
+        { titleEn: { contains: query.search, mode: "insensitive" } },
+        { descriptionFa: { contains: query.search, mode: "insensitive" } },
+        { descriptionEn: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
@@ -342,7 +355,13 @@ export const courseService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.course.findMany({ where, skip, take, orderBy, include: courseInclude }),
+      prisma.course.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        include: courseInclude,
+      }),
       prisma.course.count({ where }),
     ]);
 
@@ -352,11 +371,11 @@ export const courseService = {
     };
   },
 
-  // [DB] Get single course by slug with user context
+  // [DB] Get single course by slug (Fa or En) with user context
   async getCourseBySlug(slug: string, userId?: string) {
     const course = await prisma.course.findFirst({
       where: {
-        slug,
+        OR: [{ slugFa: slug }, { slugEn: slug }],
         published: true,
         category: { show: true },
       },
@@ -364,12 +383,11 @@ export const courseService = {
     });
 
     if (!course) {
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("course.errors.notFound", 404);
     }
 
     const formattedCourse = formatCourse(course);
 
-    // [DB] Load enrollment, reactions, favorite in parallel
     const [enrollment, counts, myReaction, favorite] = await Promise.all([
       userId
         ? prisma.enrollment.findUnique({
