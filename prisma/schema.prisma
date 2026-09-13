@@ -140,13 +140,16 @@ model Transaction {
 }
 
 
-// CATEGORY
+// CATEGORY (Bilingual)
 model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  show        Boolean  @default(true)
+  id            String   @id @default(uuid())
+  nameFa        String   @unique
+  nameEn        String   @unique
+  slugFa        String   @unique
+  slugEn        String   @unique
+  descriptionFa String?
+  descriptionEn String?
+  show          Boolean  @default(true)
 
   courses Course[]
   posts   Post[]
@@ -157,28 +160,34 @@ model Category {
   @@index([show])
 }
 
-// Teacher
+// Teacher (Bilingual)
 model Teacher {
   id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  bio       String?
+  nameFa    String
+  nameEn    String
+  slugFa    String   @unique
+  slugEn    String   @unique
+  bioFa     String?
+  bioEn     String?
   avatar    String?
   courses   Course[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// COURSE
+// COURSE (Bilingual)
 model Course {
-  id          String      @id @default(uuid())
-  title       String
-  slug        String      @unique
-  description String?
-  price       Int         @default(0)
-  imageUrl    String?
-  level       CourseLevel @default(BEGINNER)
-  published   Boolean     @default(false)
+  id            String      @id @default(uuid())
+  titleFa       String
+  titleEn       String
+  slugFa        String      @unique
+  slugEn        String      @unique
+  descriptionFa String?
+  descriptionEn String?
+  price         Int         @default(0)
+  imageUrl      String?
+  level         CourseLevel @default(BEGINNER)
+  published     Boolean     @default(false)
 
   categoryId  String
   category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -273,13 +282,16 @@ model Order {
   @@index([createdAt])
 }
 
+// ORDER ITEM (Bilingual Snapshot)
 model OrderItem {
   id              String   @id @default(uuid())
   orderId         String
   courseId        String?
 
-  courseTitle     String
-  courseSlug      String
+  courseTitleFa   String
+  courseTitleEn   String
+  courseSlugFa    String
+  courseSlugEn    String
   courseImageUrl  String?
   price           Int
 
@@ -291,6 +303,7 @@ model OrderItem {
   @@index([orderId])
   @@index([courseId])
 }
+
 // COMMENTS
 model Comment {
   id       String @id @default(uuid())
@@ -352,12 +365,15 @@ model Reaction {
 }
 
 
-// POST
+// POST (Bilingual)
 model Post {
   id         String   @id @default(uuid())
-  title      String
-  slug       String   @unique
-  content    String
+  titleFa    String
+  titleEn    String
+  slugFa     String   @unique
+  slugEn     String   @unique
+  contentFa  String
+  contentEn  String
   imageUrl   String?
   published  Boolean  @default(false)
 
