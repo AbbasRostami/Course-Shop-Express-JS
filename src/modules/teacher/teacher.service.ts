@@ -13,12 +13,15 @@ import {
   UpdateTeacherInput,
 } from "./teacher.validator.js";
 
-// [DB] Base teacher select fields
+// [DB] Base teacher select fields (bilingual)
 const teacherSelect = {
   id: true,
-  name: true,
-  slug: true,
-  bio: true,
+  nameFa: true,
+  nameEn: true,
+  slugFa: true,
+  slugEn: true,
+  bioFa: true,
+  bioEn: true,
   avatar: true,
   createdAt: true,
   updatedAt: true,
@@ -30,9 +33,12 @@ export const teacherService = {
     try {
       const teacher = await prisma.teacher.create({
         data: {
-          name: data.name,
-          slug: createSlug(data.name),
-          bio: data.bio,
+          nameFa: data.nameFa,
+          nameEn: data.nameEn,
+          slugFa: createSlug(data.nameFa),
+          slugEn: createSlug(data.nameEn),
+          bioFa: data.bioFa,
+          bioEn: data.bioEn,
           avatar: data.avatar,
         },
         select: teacherSelect,
@@ -45,13 +51,13 @@ export const teacherService = {
         await removeCloudinaryImage(data.avatar);
       }
 
-      // [ERROR] Handle duplicate name
+      // [ERROR] Handle duplicate name/slug
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new AppError("مدرسی با این نام قبلاً ثبت شده است", 400, {
-          name: "این نام قبلاً استفاده شده است",
+        throw new AppError("teacher.errors.nameExists", 400, {
+          name: "teacher.errors.nameExists",
         });
       }
 
@@ -65,7 +71,7 @@ export const teacherService = {
     data: UpdateTeacherInput & { avatar?: string },
   ) {
     if (Object.keys(data).length === 0) {
-      throw new AppError("حداقل یک فیلد برای ویرایش ارسال کنید", 400);
+      throw new AppError("teacher.errors.noUpdateData", 400);
     }
 
     const existing = await prisma.teacher.findUnique({ where: { id } });
@@ -75,18 +81,23 @@ export const teacherService = {
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
-      throw new AppError("مدرس مورد نظر یافت نشد", 404);
+      throw new AppError("teacher.errors.notFound", 404);
     }
 
     const updateData: Prisma.TeacherUpdateInput = {};
 
     // [LOGIC] Auto-generate slug on name change
-    if (data.name !== undefined) {
-      updateData.name = data.name;
-      updateData.slug = createSlug(data.name);
+    if (data.nameFa !== undefined) {
+      updateData.nameFa = data.nameFa;
+      updateData.slugFa = createSlug(data.nameFa);
+    }
+    if (data.nameEn !== undefined) {
+      updateData.nameEn = data.nameEn;
+      updateData.slugEn = createSlug(data.nameEn);
     }
 
-    if (data.bio !== undefined) updateData.bio = data.bio;
+    if (data.bioFa !== undefined) updateData.bioFa = data.bioFa;
+    if (data.bioEn !== undefined) updateData.bioEn = data.bioEn;
 
     if (data.avatar) {
       // [CLEANUP] Remove old avatar before setting new one
@@ -110,13 +121,12 @@ export const teacherService = {
         await removeCloudinaryImage(data.avatar);
       }
 
-      // [ERROR] Handle duplicate name
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new AppError("مدرسی با این نام قبلاً ثبت شده است", 400, {
-          name: "این نام قبلاً استفاده شده است",
+        throw new AppError("teacher.errors.nameExists", 400, {
+          name: "teacher.errors.nameExists",
         });
       }
 
@@ -132,15 +142,14 @@ export const teacherService = {
     });
 
     if (!existing) {
-      throw new AppError("مدرس مورد نظر یافت نشد", 404);
+      throw new AppError("teacher.errors.notFound", 404);
     }
 
     // [LOGIC] Block delete if courses are assigned
     if (existing._count.courses > 0) {
-      throw new AppError(
-        `این مدرس ${existing._count.courses} دوره دارد. ابتدا دوره‌ها را حذف یا به مدرس دیگری منتقل کنید`,
-        400,
-      );
+      throw new AppError("teacher.errors.hasCourses", 400, undefined, {
+        count: existing._count.courses,
+      });
     }
 
     await prisma.teacher.delete({ where: { id } });
@@ -151,7 +160,7 @@ export const teacherService = {
     }
   },
 
-  // [DB] Get paginated teachers with search
+  // [DB] Get paginated teachers with bilingual search
   async getTeachers(query: ListTeachersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -159,8 +168,10 @@ export const teacherService = {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { bio: { contains: query.search, mode: "insensitive" } },
+        { nameFa: { contains: query.search, mode: "insensitive" } },
+        { nameEn: { contains: query.search, mode: "insensitive" } },
+        { bioFa: { contains: query.search, mode: "insensitive" } },
+        { bioEn: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
@@ -190,10 +201,12 @@ export const teacherService = {
     };
   },
 
-  // [DB] Get teacher with published courses by slug
+  // [DB] Get teacher with published courses by slug (Fa or En)
   async getTeacherBySlug(slug: string) {
-    const teacher = await prisma.teacher.findUnique({
-      where: { slug },
+    const teacher = await prisma.teacher.findFirst({
+      where: {
+        OR: [{ slugFa: slug }, { slugEn: slug }],
+      },
       select: {
         ...teacherSelect,
         courses: {
@@ -203,15 +216,24 @@ export const teacherService = {
           },
           select: {
             id: true,
-            title: true,
-            slug: true,
-            description: true,
+            titleFa: true,
+            titleEn: true,
+            slugFa: true,
+            slugEn: true,
+            descriptionFa: true,
+            descriptionEn: true,
             price: true,
             imageUrl: true,
             level: true,
             createdAt: true,
             category: {
-              select: { id: true, name: true, slug: true },
+              select: {
+                id: true,
+                nameFa: true,
+                nameEn: true,
+                slugFa: true,
+                slugEn: true,
+              },
             },
             _count: { select: { enrollments: true } },
           },
@@ -221,7 +243,7 @@ export const teacherService = {
     });
 
     if (!teacher) {
-      throw new AppError("مدرس مورد نظر یافت نشد", 404);
+      throw new AppError("teacher.errors.notFound", 404);
     }
 
     const { courses, ...rest } = teacher;

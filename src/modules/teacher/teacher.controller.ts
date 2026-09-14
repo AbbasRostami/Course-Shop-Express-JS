@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { AppError } from "../../utils/AppError.js";
+import { localizePayload } from "../../utils/localize.js";
 import { teacherService } from "./teacher.service.js";
 import { ListTeachersQuery } from "./teacher.validator.js";
 
@@ -11,11 +12,14 @@ export const createTeacherController: RequestHandler = async (req, res) => {
     avatar = req.file.path;
   }
 
-  await teacherService.createTeacher({ ...req.body, avatar });
+  const teacher = await teacherService.createTeacher({ ...req.body, avatar });
 
   return res.status(201).json({
     status: "success",
-    data: { message: "مدرس با موفقیت ایجاد شد" },
+    data: {
+      message: req.t("teacher.success.created"),
+      teacher: localizePayload(teacher, req.locale),
+    },
   });
 };
 
@@ -28,13 +32,17 @@ export const updateTeacherController: RequestHandler = async (
   const id = req.params.id as string;
 
   const updateData: {
-    name?: string;
-    bio?: string | null;
+    nameFa?: string;
+    nameEn?: string;
+    bioFa?: string | null;
+    bioEn?: string | null;
     avatar?: string;
   } = {};
 
-  if (req.body.name !== undefined) updateData.name = req.body.name;
-  if (req.body.bio !== undefined) updateData.bio = req.body.bio;
+  if (req.body.nameFa !== undefined) updateData.nameFa = req.body.nameFa;
+  if (req.body.nameEn !== undefined) updateData.nameEn = req.body.nameEn;
+  if (req.body.bioFa !== undefined) updateData.bioFa = req.body.bioFa;
+  if (req.body.bioEn !== undefined) updateData.bioEn = req.body.bioEn;
 
   // [UPLOAD] Attach avatar URL if uploaded
   if (req.file?.path) {
@@ -42,14 +50,17 @@ export const updateTeacherController: RequestHandler = async (
   }
 
   if (Object.keys(updateData).length === 0) {
-    return next(new AppError("حداقل یک فیلد برای ویرایش ارسال کنید", 400));
+    return next(new AppError("teacher.errors.noUpdateData", 400));
   }
 
-  await teacherService.updateTeacher(id, updateData);
+  const teacher = await teacherService.updateTeacher(id, updateData);
 
   return res.status(200).json({
     status: "success",
-    data: { message: "مدرس با موفقیت ویرایش شد" },
+    data: {
+      message: req.t("teacher.success.updated"),
+      teacher: localizePayload(teacher, req.locale),
+    },
   });
 };
 
@@ -60,7 +71,7 @@ export const deleteTeacherController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "مدرس با موفقیت حذف شد" },
+    data: { message: req.t("teacher.success.deleted") },
   });
 };
 
@@ -72,7 +83,10 @@ export const getTeachersController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -83,6 +97,8 @@ export const getTeacherBySlugController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { teacher },
+    data: {
+      teacher: localizePayload(teacher, req.locale),
+    },
   });
 };

@@ -3,35 +3,49 @@ import { z } from "zod";
 // [VALID] Create teacher schema
 export const createTeacherSchema = z.object({
   body: z.object({
-    name: z
-      .string({ message: "نام مدرس الزامی است" })
-      .min(2, "نام مدرس باید حداقل ۲ کاراکتر باشد")
-      .max(100, "نام مدرس نباید بیشتر از ۱۰۰ کاراکتر باشد")
-      .trim(),
-    bio: z
-      .string()
-      .max(2000, "بیوگرافی نباید بیشتر از ۲۰۰۰ کاراکتر باشد")
+    nameFa: z
+      .string({ message: "teacher.validation.nameFaRequired" })
       .trim()
-      .optional(),
+      .min(2, "teacher.validation.nameMin")
+      .max(100, "teacher.validation.nameMax"),
+    nameEn: z
+      .string({ message: "teacher.validation.nameEnRequired" })
+      .trim()
+      .min(2, "teacher.validation.nameMin")
+      .max(100, "teacher.validation.nameMax"),
+    bioFa: z.string().trim().max(2000, "teacher.validation.bioMax").optional(),
+    bioEn: z.string().trim().max(2000, "teacher.validation.bioMax").optional(),
   }),
 });
 
 // [VALID] Update teacher schema
 export const updateTeacherSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("teacher.validation.idInvalid"),
   }),
   body: z.object({
-    name: z
+    nameFa: z
       .string()
-      .min(2, "نام مدرس باید حداقل ۲ کاراکتر باشد")
-      .max(100, "نام مدرس نباید بیشتر از ۱۰۰ کاراکتر باشد")
       .trim()
+      .min(2, "teacher.validation.nameMin")
+      .max(100, "teacher.validation.nameMax")
       .optional(),
-    bio: z
+    nameEn: z
       .string()
-      .max(2000, "بیوگرافی نباید بیشتر از ۲۰۰۰ کاراکتر باشد")
       .trim()
+      .min(2, "teacher.validation.nameMin")
+      .max(100, "teacher.validation.nameMax")
+      .optional(),
+    bioFa: z
+      .string()
+      .trim()
+      .max(2000, "teacher.validation.bioMax")
+      .nullable()
+      .optional(),
+    bioEn: z
+      .string()
+      .trim()
+      .max(2000, "teacher.validation.bioMax")
       .nullable()
       .optional(),
   }),
@@ -40,7 +54,7 @@ export const updateTeacherSchema = z.object({
 // [VALID] Delete teacher schema
 export const deleteTeacherSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("teacher.validation.idInvalid"),
   }),
 });
 

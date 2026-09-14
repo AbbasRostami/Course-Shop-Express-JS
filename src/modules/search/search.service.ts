@@ -14,7 +14,7 @@ const getVisiblePostWhere = () => ({
 });
 
 export const searchService = {
-  // [DB] Search courses and posts by query string
+  // [DB] Search courses and posts by query string across both languages
   async search(query: SearchQuery) {
     const { q, type } = query;
 
@@ -27,27 +27,41 @@ export const searchService = {
     };
 
     const [courses, posts] = await Promise.all([
-      // [DB] Search courses if type is unset or "course"
+      // [DB] Search courses across bilingual columns
       !type || type === "course"
         ? prisma.course.findMany({
             where: {
               ...getVisibleCourseWhere(),
               AND: [
                 {
-                  OR: [{ title: searchFilter }, { description: searchFilter }],
+                  OR: [
+                    { titleFa: searchFilter },
+                    { titleEn: searchFilter },
+                    { descriptionFa: searchFilter },
+                    { descriptionEn: searchFilter },
+                  ],
                 },
               ],
             },
             select: {
               id: true,
-              title: true,
-              slug: true,
-              description: true,
+              titleFa: true,
+              titleEn: true,
+              slugFa: true,
+              slugEn: true,
+              descriptionFa: true,
+              descriptionEn: true,
               imageUrl: true,
               price: true,
               level: true,
               category: {
-                select: { id: true, name: true, slug: true },
+                select: { 
+                  id: true, 
+                  nameFa: true, 
+                  nameEn: true, 
+                  slugFa: true, 
+                  slugEn: true 
+                },
               },
             },
             take: limit,
@@ -55,24 +69,37 @@ export const searchService = {
           })
         : Promise.resolve([]),
 
-      // [DB] Search posts if type is unset or "post"
+      // [DB] Search posts across bilingual columns
       !type || type === "post"
         ? prisma.post.findMany({
             where: {
               ...getVisiblePostWhere(),
               AND: [
                 {
-                  OR: [{ title: searchFilter }, { content: searchFilter }],
+                  OR: [
+                    { titleFa: searchFilter },
+                    { titleEn: searchFilter },
+                    { contentFa: searchFilter },
+                    { contentEn: searchFilter },
+                  ],
                 },
               ],
             },
             select: {
               id: true,
-              title: true,
-              slug: true,
+              titleFa: true,
+              titleEn: true,
+              slugFa: true,
+              slugEn: true,
               imageUrl: true,
               category: {
-                select: { id: true, name: true, slug: true },
+                select: { 
+                  id: true, 
+                  nameFa: true, 
+                  nameEn: true, 
+                  slugFa: true, 
+                  slugEn: true 
+                },
               },
             },
             take: limit,

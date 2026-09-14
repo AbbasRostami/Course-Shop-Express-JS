@@ -16,7 +16,11 @@ export const getProfileController: RequestHandler = async (req, res) => {
 };
 
 // [PUT] Update current user profile
-export const updateProfileController: RequestHandler = async (req, res, next) => {
+export const updateProfileController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
   const userId = req.user!.id;
 
   const updateData: { name?: string; phone?: string; avatar?: string } = {};
@@ -30,7 +34,7 @@ export const updateProfileController: RequestHandler = async (req, res, next) =>
   }
 
   if (Object.keys(updateData).length === 0) {
-    return next(new AppError("حداقل یک فیلد برای ویرایش ارسال کنید", 400));
+    return next(new AppError("user.errors.noUpdateData", 400));
   }
 
   const updatedProfile = await userService.updateProfile(userId, updateData);
@@ -38,7 +42,7 @@ export const updateProfileController: RequestHandler = async (req, res, next) =>
   return res.status(200).json({
     status: "success",
     data: {
-      message: "پروفایل شما با موفقیت به‌روزرسانی شد",
+      message: req.t("user.success.profileUpdated"),
       profile: updatedProfile,
     },
   });
@@ -51,12 +55,15 @@ export const deleteAvatarController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "تصویر پروفایل شما با موفقیت حذف شد" },
+    data: { message: req.t("user.success.avatarDeleted") },
   });
 };
 
 // [GET] Get profile activity overview
-export const getProfileOverviewController: RequestHandler = async (req, res) => {
+export const getProfileOverviewController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
   const overview = await userService.getProfileOverview(userId);
 
@@ -95,7 +102,9 @@ export const getUserByIdController: RequestHandler = async (req, res) => {
 
 // [GET] Admin list banned users with masked email
 export const getBannedUsersController: RequestHandler = async (req, res) => {
-  const result = await userService.getBannedUsers(req.query as ListBannedUsersQuery);
+  const result = await userService.getBannedUsers(
+    req.query as ListBannedUsersQuery,
+  );
 
   // [SECURITY] Mask email in banned list
   const maskedItems = maskFields(result.items, ["email"]);
@@ -115,7 +124,7 @@ export const banUserController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "کاربر با موفقیت مسدود شد" },
+    data: { message: req.t("user.success.banned") },
   });
 };
 
@@ -127,6 +136,6 @@ export const unbanUserController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "کاربر با موفقیت رفع مسدودیت شد" },
+    data: { message: req.t("user.success.unbanned") },
   });
 };

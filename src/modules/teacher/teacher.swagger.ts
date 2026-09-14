@@ -4,25 +4,30 @@ export const teacherSwagger = {
       get: {
         tags: ["Teacher"],
         summary: "Get all teachers",
-        description: "Returns list of all teachers with course count.",
+        description:
+          "Returns list of all teachers with course count. **Text fields (`name`, `slug`, `bio`) are localized based on the `Accept-Language` header (`fa` or `en`).**",
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+            description: "Response language for text fields",
+          },
           {
             name: "page",
             in: "query",
             schema: { type: "string", example: "1" },
-            description: "Page number",
           },
           {
             name: "limit",
             in: "query",
             schema: { type: "string", example: "10" },
-            description: "Items per page",
           },
           {
             name: "search",
             in: "query",
             schema: { type: "string" },
-            description: "Search by name or bio",
+            description: "Search across name and bio (both Fa and En columns)",
           },
         ],
         responses: {
@@ -61,7 +66,8 @@ export const teacherSwagger = {
       post: {
         tags: ["Teacher"],
         summary: "Create a teacher (Admin)",
-        description: "Must be submitted as **multipart/form-data**.",
+        description:
+          "Must be submitted as **multipart/form-data**. Both Persian and English fields are required.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         requestBody: {
           required: true,
@@ -69,16 +75,29 @@ export const teacherSwagger = {
             "multipart/form-data": {
               schema: {
                 type: "object",
-                required: ["name"],
+                required: ["nameFa", "nameEn"],
                 properties: {
-                  name: {
+                  nameFa: {
                     type: "string",
                     minLength: 2,
                     maxLength: 100,
+                    example: "عباس رستمی",
                   },
-                  bio: {
+                  nameEn: {
+                    type: "string",
+                    minLength: 2,
+                    maxLength: 100,
+                    example: "Abbas Rostami",
+                  },
+                  bioFa: {
                     type: "string",
                     maxLength: 2000,
+                    example: "توسعه‌دهنده فول‌استک",
+                  },
+                  bioEn: {
+                    type: "string",
+                    maxLength: 2000,
+                    example: "Full-stack developer",
                   },
                   avatar: {
                     type: "string",
@@ -98,6 +117,14 @@ export const teacherSwagger = {
                   status: "success",
                   data: {
                     message: "مدرس با موفقیت ایجاد شد",
+                    teacher: {
+                      id: "teacher-uuid",
+                      name: "عباس رستمی",
+                      slug: "abbas-rostami",
+                      bio: "توسعه‌دهنده فول‌استک",
+                      avatar:
+                        "https://res.cloudinary.com/.../teachers/avatar.jpg",
+                    },
                   },
                 },
               },
@@ -106,13 +133,17 @@ export const teacherSwagger = {
           400: {
             description: `Invalid request - Validation rules:
 
-- name:
-  - Must not be empty.
+- nameFa:
+  - Required.
   - Must be a string.
-  - Min length: 2.
-  - Max length: 100.
+  - Min length: 2, Max length: 100.
 
-- bio:
+- nameEn:
+  - Required.
+  - Must be a string.
+  - Min length: 2, Max length: 100.
+
+- bioFa & bioEn:
   - Optional.
   - Must be a string.
   - Max length: 2000.
@@ -122,7 +153,7 @@ export const teacherSwagger = {
   - Max size: 2 MB.
   - Allowed formats: .jpg, .jpeg, .png, .webp.
 
-- Duplicate name may also return 400.`,
+- Duplicate names may also return 400.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -133,15 +164,22 @@ export const teacherSwagger = {
     "/api/teachers/{slug}": {
       get: {
         tags: ["Teacher"],
-        summary: "Get teacher by slug",
+        summary: "Get teacher by slug (Fa or En)",
         description:
-          "Returns teacher details along with their published courses.",
+          "Returns teacher details along with their published courses. **Slug can be Persian or English.** Text fields are localized based on `Accept-Language` header.",
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "slug",
             in: "path",
             required: true,
             schema: { type: "string" },
+            description:
+              "Persian or English slug (e.g. `abbas-rostami` or `عباس-رستمی`)",
           },
         ],
         responses: {
@@ -156,7 +194,7 @@ export const teacherSwagger = {
                       id: "teacher-uuid",
                       name: "Abbas Rostami",
                       slug: "abbas-rostami",
-                      bio: "توسعه‌دهنده",
+                      bio: "Full-stack developer",
                       avatar:
                         "https://res.cloudinary.com/.../teachers/avatar.jpg",
                       createdAt: "2026-01-10T12:00:00.000Z",
@@ -164,16 +202,16 @@ export const teacherSwagger = {
                       courses: [
                         {
                           id: "course-uuid",
-                          title: "آموزش React",
+                          title: "React Course",
                           slug: "react-course",
-                          description: "یادگیری کامل React با Next.js",
+                          description: "Complete guide to React with Next.js",
                           price: 5000000,
                           imageUrl:
                             "https://res.cloudinary.com/.../courses/react.jpg",
                           level: "INTERMEDIATE",
                           category: {
                             id: "cat-uuid",
-                            name: "فرانت‌اند",
+                            name: "Frontend",
                             slug: "frontend",
                           },
                           studentsCount: 120,
@@ -196,7 +234,7 @@ export const teacherSwagger = {
         tags: ["Teacher"],
         summary: "Update a teacher (Admin)",
         description:
-          "Must be submitted as **multipart/form-data**. All fields are optional. If new avatar is uploaded, old avatar is deleted from cloud storage. If name changes, slug is auto-regenerated.",
+          "Must be submitted as **multipart/form-data**. All fields are optional. If name changes, slug is auto-regenerated for that language.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -212,12 +250,14 @@ export const teacherSwagger = {
               schema: {
                 type: "object",
                 properties: {
-                  name: {
+                  nameFa: { type: "string", minLength: 2, maxLength: 100 },
+                  nameEn: { type: "string", minLength: 2, maxLength: 100 },
+                  bioFa: {
                     type: "string",
-                    minLength: 2,
-                    maxLength: 100,
+                    maxLength: 2000,
+                    nullable: true,
                   },
-                  bio: {
+                  bioEn: {
                     type: "string",
                     maxLength: 2000,
                     nullable: true,
@@ -248,28 +288,11 @@ export const teacherSwagger = {
           400: {
             description: `Invalid request - Validation rules:
 
-- id (path):
-  - Must be a valid UUID v4.
-
-- name:
-  - Optional.
-  - Must be a string.
-  - Min length: 2.
-  - Max length: 100.
-
-- bio:
-  - Optional.
-  - Must be a string or null.
-  - Max length: 2000.
-  - Send null to remove biography.
-
-- avatar:
-  - Optional.
-  - Max size: 2 MB.
-  - Allowed formats: .jpg, .jpeg, .png, .webp.
-
-- At least one field is required.
-- Duplicate name may also return 400.`,
+- id (path): Must be a valid UUID v4.
+- nameFa/nameEn: Optional. Min 2, Max 100.
+- bioFa/bioEn: Optional or null. Max 2000.
+- avatar: Optional. Max 2 MB. .jpg, .jpeg, .png, .webp.
+- At least one field required.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -280,7 +303,7 @@ export const teacherSwagger = {
         tags: ["Teacher"],
         summary: "Delete a teacher (Admin)",
         description:
-          "Permanently deletes a teacher and their avatar from cloud storage. **Cannot delete a teacher who has courses assigned.** First reassign or delete their courses.",
+          "Permanently deletes a teacher and their avatar. **Cannot delete a teacher who has courses assigned.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {

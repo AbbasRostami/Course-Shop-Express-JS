@@ -5,8 +5,13 @@ export const searchSwagger = {
         tags: ["Search"],
         summary: "Global search across courses and posts",
         description:
-          "Searches published courses and blog posts by title/content. Returns limited results for quick search / autocomplete. For full results with pagination, use the dedicated list endpoints with search parameter.",
+          "Searches published courses and blog posts by title/content across **both Persian and English columns**. Returns limited results for quick search / autocomplete. Text fields in response are localized based on `Accept-Language` header.",
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "q",
             in: "query",
@@ -17,7 +22,7 @@ export const searchSwagger = {
               maxLength: 100,
               example: "react",
             },
-            description: "متن جستجو",
+            description: "Search query (matches both Fa and En columns)",
           },
           {
             name: "type",
@@ -27,7 +32,7 @@ export const searchSwagger = {
               enum: ["course", "post"],
             },
             description:
-              "فیلتر نوع نتایج. اگر ارسال نشود، هر دو جستجو می‌شوند.",
+              "Filter result type. If not provided, both are searched.",
           },
           {
             name: "limit",
@@ -36,7 +41,7 @@ export const searchSwagger = {
               type: "string",
               example: "5",
             },
-            description: "حداکثر تعداد نتایج هر نوع (پیش‌فرض: 5، حداکثر: 20)",
+            description: "Max results per type (default: 5, max: 20)",
           },
         ],
         responses: {
@@ -46,7 +51,7 @@ export const searchSwagger = {
               "application/json": {
                 examples: {
                   both: {
-                    summary: "جستجو در همه",
+                    summary: "Search across all",
                     value: {
                       status: "success",
                       data: {
@@ -83,34 +88,8 @@ export const searchSwagger = {
                       },
                     },
                   },
-                  courseOnly: {
-                    summary: "فقط دوره‌ها",
-                    value: {
-                      status: "success",
-                      data: {
-                        query: "react",
-                        courses: [
-                          {
-                            id: "course-uuid",
-                            title: "آموزش React پیشرفته",
-                            slug: "react-advanced",
-                            description: "یادگیری کامل React",
-                            imageUrl: "/uploads/courses/react.jpg",
-                            price: 500000,
-                            level: "INTERMEDIATE",
-                            category: {
-                              id: "cat-uuid",
-                              name: "فرانت‌اند",
-                              slug: "frontend",
-                            },
-                          },
-                        ],
-                        posts: [],
-                      },
-                    },
-                  },
                   noResults: {
-                    summary: "بدون نتیجه",
+                    summary: "No results",
                     value: {
                       status: "success",
                       data: {
@@ -125,19 +104,11 @@ export const searchSwagger = {
             },
           },
           400: {
-            description: `Invalid request - Validation rules:\n
-- q:
-  - Must not be empty.
-  - Must be a string.
-  - Min length: 1.
-  - Max length: 100.\n
-- type:
-  - Optional.
-  - Must be one of: course, post.\n
-- limit:
-  - Optional.
-  - Must be a number.
-  - Default: 5, Maximum: 20.`,
+            description: `Invalid request - Validation rules:
+
+- q: Required. Min 1, Max 100.
+- type: Optional. Enum: course, post.
+- limit: Optional. Default 5, Max 20.`,
           },
         },
       },

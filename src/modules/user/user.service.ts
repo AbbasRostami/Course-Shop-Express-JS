@@ -30,7 +30,7 @@ export const userService = {
     });
 
     if (!user) {
-      throw new AppError("کاربر مورد نظر یافت نشد", 404);
+      throw new AppError("user.errors.notFound", 404);
     }
 
     return user;
@@ -135,8 +135,10 @@ export const userService = {
     const where: Prisma.UserWhereInput = {};
 
     if (query.role) where.role = query.role;
-    if (query.isVerified !== undefined) where.isVerified = query.isVerified === "true";
-    if (query.isBanned !== undefined) where.isBanned = query.isBanned === "true";
+    if (query.isVerified !== undefined)
+      where.isVerified = query.isVerified === "true";
+    if (query.isBanned !== undefined)
+      where.isBanned = query.isBanned === "true";
 
     if (query.search) {
       where.OR = [
@@ -220,7 +222,7 @@ export const userService = {
     });
 
     if (!user) {
-      throw new AppError("کاربر مورد نظر یافت نشد", 404);
+      throw new AppError("user.errors.notFound", 404);
     }
 
     const { _count, wallet, ...rest } = user;
@@ -228,7 +230,6 @@ export const userService = {
     return {
       ...rest,
       walletBalance: wallet?.balance ?? 0,
-      // [UTIL] Flatten _count into stats
       stats: {
         enrollments: _count.enrollments,
         orders: _count.orders,
@@ -273,22 +274,22 @@ export const userService = {
   async banUser(id: string, currentUserId: string) {
     // [LOGIC] Block self-ban
     if (id === currentUserId) {
-      throw new AppError("نمی‌توانید خودتان را مسدود کنید", 400);
+      throw new AppError("user.errors.cannotBanSelf", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("user.errors.notFound", 404);
     }
 
     // [LOGIC] Block banning admin
     if (user.role === "ADMIN") {
-      throw new AppError("امکان مسدود کردن ادمین وجود ندارد", 409);
+      throw new AppError("user.errors.cannotBanAdmin", 409);
     }
 
     if (user.isBanned) {
-      throw new AppError("کاربر قبلاً مسدود شده است", 422);
+      throw new AppError("user.errors.alreadyBanned", 422);
     }
 
     return prisma.user.update({
@@ -313,11 +314,11 @@ export const userService = {
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("user.errors.notFound", 404);
     }
 
     if (!user.isBanned) {
-      throw new AppError("کاربر مسدود نیست", 400);
+      throw new AppError("user.errors.notBanned", 400);
     }
 
     return prisma.user.update({

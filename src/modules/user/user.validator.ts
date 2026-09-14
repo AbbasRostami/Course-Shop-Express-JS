@@ -3,10 +3,10 @@ import { z } from "zod";
 // [VALID] Update profile schema
 export const updateProfileSchema = z.object({
   body: z.object({
-    name: z.string().min(2, "نام باید حداقل ۲ کاراکتر باشد").optional(),
+    name: z.string().min(2, "user.validation.nameMin").optional(),
     phone: z
       .string()
-      .regex(/^09\d{9}$/, "شماره موبایل وارد شده معتبر نیست")
+      .regex(/^09\d{9}$/, "user.validation.phoneInvalid")
       .optional(),
   }),
 });
@@ -28,14 +28,14 @@ export const listUsersSchema = z.object({
 // [VALID] Get user by ID schema
 export const getUserByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه کاربر نامعتبر است"),
+    id: z.string().uuid("user.validation.idInvalid"),
   }),
 });
 
 // [VALID] Ban user schema
 export const banUserSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه کاربر نامعتبر است"),
+    id: z.string().uuid("user.validation.idInvalid"),
   }),
 });
 
@@ -47,6 +47,8 @@ export const listBannedUsersSchema = z.object({
   }),
 });
 
-export type ListBannedUsersQuery = z.infer<typeof listBannedUsersSchema>["query"];
+export type ListBannedUsersQuery = z.infer<
+  typeof listBannedUsersSchema
+>["query"];
 export type ListUsersQuery = z.infer<typeof listUsersSchema>["query"];
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>["body"];
