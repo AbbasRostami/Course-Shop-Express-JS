@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { localizePayload } from "../../utils/localize.js";
 import { categoryService } from "./category.service.js";
 import { ListCategoriesAdminQuery } from "./category.validator.js";
 
@@ -9,34 +10,43 @@ export const createCategoryController: RequestHandler = async (req, res) => {
   return res.status(201).json({
     status: "success",
     data: {
-      message: "دسته بندی با موفقیت ایجاد شد",
-      category,
+      message: req.t("category.success.created"),
+      category: localizePayload(category, req.locale),
     },
   });
 };
 
 // [GET] Public list categories
-export const getPublicCategoriesController: RequestHandler = async (req, res) => {
+export const getPublicCategoriesController: RequestHandler = async (
+  req,
+  res,
+) => {
   const categories = await categoryService.getPublicCategories();
 
   return res.status(200).json({
     status: "success",
     data: {
-      categories,
+      categories: localizePayload(categories, req.locale),
       total: categories.length,
     },
   });
 };
 
 // [GET] Admin list categories with pagination
-export const getAdminCategoriesController: RequestHandler = async (req, res) => {
+export const getAdminCategoriesController: RequestHandler = async (
+  req,
+  res,
+) => {
   const result = await categoryService.getAdminCategories(
     req.query as ListCategoriesAdminQuery,
   );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -47,7 +57,9 @@ export const getCategoryBySlugController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { category },
+    data: {
+      category: localizePayload(category, req.locale),
+    },
   });
 };
 
@@ -59,8 +71,8 @@ export const updateCategoryController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: "دسته بندی با موفقیت ویرایش شد",
-      category,
+      message: req.t("category.success.updated"),
+      category: localizePayload(category, req.locale),
     },
   });
 };
@@ -75,9 +87,9 @@ export const toggleVisibilityController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: show
-        ? "دسته بندی با موفقیت فعال شد. برای انتشار دوره‌ها، آن‌ها را به صورت جداگانه فعالسازی کنید."
-        : "دسته بندی با موفقیت غیرفعال شد. دوره‌ها و پست‌های وابسته نیز غیرفعال شدند.",
+      message: req.t(
+        show ? "category.success.activated" : "category.success.deactivated",
+      ),
     },
   });
 };
@@ -89,6 +101,6 @@ export const deleteCategoryController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "دسته بندی با موفقیت حذف شد" },
+    data: { message: req.t("category.success.deleted") },
   });
 };

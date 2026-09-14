@@ -5,7 +5,14 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Get all public categories",
         description:
-          "Returns active categories (show=true) with count of published courses and posts. No authentication required.",
+          "Returns active categories (show=true) with count of published courses and posts. **Text fields (`name`, `slug`, `description`) are localized based on `Accept-Language` header.**",
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+        ],
         responses: {
           200: {
             description: "List of active categories retrieved successfully.",
@@ -38,7 +45,7 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Create new category (Admin)",
         description:
-          "Creates a new category. Slug is auto-generated from name (supports Persian).",
+          "Creates a new bilingual category. Slugs are auto-generated from both names.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         requestBody: {
           required: true,
@@ -46,18 +53,29 @@ export const categorySwagger = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["name"],
+                required: ["nameFa", "nameEn"],
                 properties: {
-                  name: {
+                  nameFa: {
                     type: "string",
                     minLength: 2,
                     maxLength: 50,
                     example: "فرانت‌اند",
                   },
-                  description: {
+                  nameEn: {
+                    type: "string",
+                    minLength: 2,
+                    maxLength: 50,
+                    example: "Frontend",
+                  },
+                  descriptionFa: {
                     type: "string",
                     maxLength: 500,
-                    example: "آموزش‌های توسعه frontend",
+                    example: "آموزش‌های توسعه فرانت‌اند",
+                  },
+                  descriptionEn: {
+                    type: "string",
+                    maxLength: 500,
+                    example: "Frontend development tutorials",
                   },
                   show: {
                     type: "boolean",
@@ -82,7 +100,7 @@ export const categorySwagger = {
                       id: "d3b07384-d113-4956-a5cc-484443028456",
                       name: "فرانت‌اند",
                       slug: "فرانت-اند",
-                      description: "آموزش‌های توسعه frontend",
+                      description: "آموزش‌های توسعه فرانت‌اند",
                       show: true,
                       createdAt: "2026-01-15T14:00:00.000Z",
                       updatedAt: "2026-01-15T14:00:00.000Z",
@@ -95,23 +113,18 @@ export const categorySwagger = {
           400: {
             description: `Invalid request - Validation rules:
 
-- name:
-  - Must not be empty.
-  - Must be a string.
-  - Min length: 2.
-  - Max length: 50.
+- nameFa & nameEn:
+  - Required.
+  - Min length: 2, Max length: 50.
 
-- description:
+- descriptionFa & descriptionEn:
   - Optional.
-  - Must be a string.
   - Max length: 500.
 
 - show:
-  - Optional.
-  - Must be a boolean.
-  - Default: true.
+  - Optional. Boolean. Default: true.
 
-- Duplicate name may also return 400.`,
+- Duplicate names may return 400.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -124,9 +137,14 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Get all categories with pagination (Admin)",
         description:
-          "Returns all categories (including hidden) with pagination, search and filter.",
+          "Returns all categories (including hidden) with pagination, search and filter. Search works on Fa and En columns.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "page",
             in: "query",
@@ -141,13 +159,12 @@ export const categorySwagger = {
             name: "show",
             in: "query",
             schema: { type: "string", enum: ["true", "false"] },
-            description: "Filter by visibility status",
           },
           {
             name: "search",
             in: "query",
             schema: { type: "string" },
-            description: "Search by name or description",
+            description: "Search across name and description (Fa + En)",
           },
         ],
         responses: {
@@ -180,26 +197,6 @@ export const categorySwagger = {
               },
             },
           },
-          400: {
-            description: `Invalid request - Validation rules:
-
-- page:
-  - Optional.
-  - Must be a numeric string.
-
-- limit:
-  - Optional.
-  - Must be a numeric string.
-
-- show:
-  - Optional.
-  - Must be one of: true, false.
-
-- search:
-  - Optional.
-  - Must be a string.
-  - Max length: 100.`,
-          },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
         },
@@ -209,10 +206,15 @@ export const categorySwagger = {
     "/api/categories/{slug}": {
       get: {
         tags: ["Category"],
-        summary: "Get category by slug",
+        summary: "Get category by slug (Fa or En)",
         description:
-          "Returns a single active category with count of published items.",
+          "Returns a single active category. **Slug can be either Persian or English.**",
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "slug",
             in: "path",
@@ -232,7 +234,7 @@ export const categorySwagger = {
                       id: "d3b07384-d113-4956-a5cc-484443028456",
                       name: "فرانت‌اند",
                       slug: "فرانت-اند",
-                      description: "آموزش‌های توسعه frontend",
+                      description: "آموزش‌های توسعه فرانت‌اند",
                       show: true,
                       createdAt: "2026-01-15T14:00:00.000Z",
                       updatedAt: "2026-01-15T14:00:00.000Z",
@@ -242,13 +244,6 @@ export const categorySwagger = {
                 },
               },
             },
-          },
-          400: {
-            description: `Invalid request - Validation rules:
-
-- slug (path):
-  - Must not be empty.
-  - Max length: 100.`,
           },
           404: { description: "Category not found." },
         },
@@ -260,7 +255,7 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Update category (Admin)",
         description:
-          "Updates category fields. If name changes, slug is auto-regenerated. At least one field is required.",
+          "Updates category fields. If a name changes, its corresponding slug is auto-regenerated. At least one field is required.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -277,16 +272,25 @@ export const categorySwagger = {
               schema: {
                 type: "object",
                 properties: {
-                  name: {
+                  nameFa: {
                     type: "string",
                     minLength: 2,
                     maxLength: 50,
-                    example: "Frontend Development",
+                    example: "فرانت‌اند حرفه‌ای",
                   },
-                  description: {
+                  nameEn: {
+                    type: "string",
+                    minLength: 2,
+                    maxLength: 50,
+                    example: "Advanced Frontend",
+                  },
+                  descriptionFa: {
                     type: "string",
                     maxLength: 500,
-                    example: "توضیحات جدید",
+                  },
+                  descriptionEn: {
+                    type: "string",
+                    maxLength: 500,
                   },
                 },
               },
@@ -301,12 +305,12 @@ export const categorySwagger = {
                 example: {
                   status: "success",
                   data: {
-                    message: "دسته با موفقیت ویرایش شد",
+                    message: "دسته بندی با موفقیت ویرایش شد",
                     category: {
                       id: "d3b07384-d113-4956-a5cc-484443028456",
-                      name: "Frontend Development",
-                      slug: "frontend-development",
-                      description: "توضیحات جدید",
+                      name: "Advanced Frontend",
+                      slug: "advanced-frontend",
+                      description: "Updated description",
                       show: true,
                       createdAt: "2026-01-15T14:00:00.000Z",
                       updatedAt: "2026-01-15T15:00:00.000Z",
@@ -319,22 +323,11 @@ export const categorySwagger = {
           400: {
             description: `Invalid request - Validation rules:
 
-- id (path):
-  - Must be a valid UUID v4.
-
-- name:
-  - Optional.
-  - Must be a string.
-  - Min length: 2.
-  - Max length: 50.
-
-- description:
-  - Optional.
-  - Must be a string.
-  - Max length: 500.
-
-- At least one field is required.
-- Duplicate name may also return 400.`,
+- id (path): Must be a valid UUID v4.
+- nameFa/nameEn: Optional. Min 2, Max 50.
+- descriptionFa/descriptionEn: Optional. Max 500.
+- At least one field required.
+- Duplicate name may return 400.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -345,7 +338,7 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Delete category (Admin)",
         description:
-          "Permanently deletes a category. **Cannot delete a category that has courses or posts assigned.** First reassign or delete those items.",
+          "Permanently deletes a category. **Cannot delete a category that has courses or posts assigned.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -370,32 +363,23 @@ export const categorySwagger = {
             },
           },
           400: {
-            description: `Invalid request - Validation rules:
-
-- id (path):
-  - Must be a valid UUID v4.
-
-- Cannot delete a category that has courses assigned.
-- Cannot delete a category that has posts assigned.
-- First reassign or delete all courses and posts in this category.`,
+            description: "Cannot delete category with existing courses/posts.",
             content: {
               "application/json": {
                 examples: {
                   hasCourses: {
-                    summary: "دوره دارد",
                     value: {
                       status: "error",
                       message:
-                        "این دسته بندی ۳ دوره دارد. ابتدا دوره‌ها را حذف یا به دسته دیگری منتقل کنید",
+                        "این دسته بندی 3 دوره دارد. ابتدا دوره‌ها را حذف یا به دسته دیگری منتقل کنید",
                       code: 400,
                     },
                   },
                   hasPosts: {
-                    summary: "مقاله دارد",
                     value: {
                       status: "error",
                       message:
-                        "این دسته بندی ۵ مقاله دارد. ابتدا مقاله‌ها را حذف یا به دسته دیگری منتقل کنید",
+                        "این دسته بندی 5 مقاله دارد. ابتدا مقاله‌ها را حذف یا به دسته دیگری منتقل کنید",
                       code: 400,
                     },
                   },
@@ -415,7 +399,7 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Toggle category visibility (Admin)",
         description:
-          "Activates or deactivates a category. When deactivated, all published courses and posts in this category will be automatically unpublished. When activated, items remain unpublished and must be published manually.",
+          "Activates or deactivates a category. When deactivated, all published courses and posts in this category will be automatically unpublished.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -433,10 +417,7 @@ export const categorySwagger = {
                 type: "object",
                 required: ["show"],
                 properties: {
-                  show: {
-                    type: "boolean",
-                    example: false,
-                  },
+                  show: { type: "boolean", example: false },
                 },
               },
             },
@@ -471,21 +452,11 @@ export const categorySwagger = {
             },
           },
           400: {
-            description: `Invalid request - Validation rules:
-
-- id (path):
-  - Must be a valid UUID v4.
-
-- show:
-  - Must not be empty.
-  - Must be a boolean.
-
-- Category must not already be in the requested state.`,
+            description: "Category is already in the requested state.",
             content: {
               "application/json": {
                 examples: {
                   alreadyActive: {
-                    summary: "از قبل فعال است",
                     value: {
                       status: "error",
                       message: "دسته بندی از قبل فعال است",
@@ -493,7 +464,6 @@ export const categorySwagger = {
                     },
                   },
                   alreadyInactive: {
-                    summary: "از قبل غیرفعال است",
                     value: {
                       status: "error",
                       message: "دسته بندی از قبل غیرفعال است",

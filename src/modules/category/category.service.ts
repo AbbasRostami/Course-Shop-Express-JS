@@ -29,14 +29,14 @@ const categoryWithPublishedCount = {
   },
 };
 
-// [ERROR] Handle duplicate name (P2002)
+// [ERROR] Handle duplicate name/slug (P2002)
 const handleUniqueError = (error: unknown): never => {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   ) {
-    throw new AppError("دسته بندی‌ای با این نام قبلاً ثبت شده است", 400, {
-      name: "این نام قبلاً استفاده شده است",
+    throw new AppError("category.errors.nameExists", 400, {
+      name: "category.errors.nameExists",
     });
   }
   throw error;
@@ -48,9 +48,12 @@ export const categoryService = {
     try {
       const category = await prisma.category.create({
         data: {
-          name: data.name,
-          slug: createSlug(data.name),
-          description: data.description,
+          nameFa: data.nameFa,
+          nameEn: data.nameEn,
+          slugFa: createSlug(data.nameFa),
+          slugEn: createSlug(data.nameEn),
+          descriptionFa: data.descriptionFa,
+          descriptionEn: data.descriptionEn,
           show: data.show,
         },
       });
@@ -80,11 +83,13 @@ export const categoryService = {
       where.show = query.show === "true";
     }
 
-    // [LOGIC] Apply search filter
+    // [LOGIC] Apply bilingual search filter
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { description: { contains: query.search, mode: "insensitive" } },
+        { nameFa: { contains: query.search, mode: "insensitive" } },
+        { nameEn: { contains: query.search, mode: "insensitive" } },
+        { descriptionFa: { contains: query.search, mode: "insensitive" } },
+        { descriptionEn: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
@@ -105,15 +110,18 @@ export const categoryService = {
     };
   },
 
-  // [DB] Get single category by slug (public)
+  // [DB] Get single category by slug (Fa or En, public)
   async getCategoryBySlug(slug: string) {
     const category = await prisma.category.findFirst({
-      where: { slug, show: true },
+      where: {
+        OR: [{ slugFa: slug }, { slugEn: slug }],
+        show: true,
+      },
       include: categoryWithPublishedCount,
     });
 
     if (!category) {
-      throw new AppError("دسته بندی مورد نظر یافت نشد", 404);
+      throw new AppError("category.errors.notFound", 404);
     }
 
     return category;
@@ -123,19 +131,26 @@ export const categoryService = {
   async updateCategory(id: string, data: UpdateCategoryInput) {
     const existing = await prisma.category.findUnique({ where: { id } });
     if (!existing) {
-      throw new AppError("دسته بندی مورد نظر یافت نشد", 404);
+      throw new AppError("category.errors.notFound", 404);
     }
 
     const updateData: Prisma.CategoryUpdateInput = {};
 
     // [LOGIC] Auto-generate slug on name change
-    if (data.name !== undefined) {
-      updateData.name = data.name;
-      updateData.slug = createSlug(data.name);
+    if (data.nameFa !== undefined) {
+      updateData.nameFa = data.nameFa;
+      updateData.slugFa = createSlug(data.nameFa);
+    }
+    if (data.nameEn !== undefined) {
+      updateData.nameEn = data.nameEn;
+      updateData.slugEn = createSlug(data.nameEn);
     }
 
-    if (data.description !== undefined) {
-      updateData.description = data.description;
+    if (data.descriptionFa !== undefined) {
+      updateData.descriptionFa = data.descriptionFa;
+    }
+    if (data.descriptionEn !== undefined) {
+      updateData.descriptionEn = data.descriptionEn;
     }
 
     try {
@@ -155,13 +170,15 @@ export const categoryService = {
       const existing = await tx.category.findUnique({ where: { id } });
 
       if (!existing) {
-        throw new AppError("دسته بندی مورد نظر یافت نشد", 404);
+        throw new AppError("category.errors.notFound", 404);
       }
 
       // [LOGIC] Prevent redundant toggle
       if (existing.show === show) {
         throw new AppError(
-          show ? "دسته بندی از قبل فعال است" : "دسته بندی از قبل غیرفعال است",
+          show
+            ? "category.errors.alreadyActive"
+            : "category.errors.alreadyInactive",
           400,
         );
       }
@@ -200,23 +217,21 @@ export const categoryService = {
     });
 
     if (!existing) {
-      throw new AppError("دسته بندی مورد نظر یافت نشد", 404);
+      throw new AppError("category.errors.notFound", 404);
     }
 
     // [LOGIC] Block delete if courses exist
     if (existing._count.courses > 0) {
-      throw new AppError(
-        `این دسته بندی ${existing._count.courses} دوره دارد. ابتدا دوره‌ها را حذف یا به دسته دیگری منتقل کنید`,
-        400,
-      );
+      throw new AppError("category.errors.hasCourses", 400, undefined, {
+        count: existing._count.courses,
+      });
     }
 
     // [LOGIC] Block delete if posts exist
     if (existing._count.posts > 0) {
-      throw new AppError(
-        `این دسته بندی ${existing._count.posts} مقاله دارد. ابتدا مقاله‌ها را حذف یا به دسته دیگری منتقل کنید`,
-        400,
-      );
+      throw new AppError("category.errors.hasPosts", 400, undefined, {
+        count: existing._count.posts,
+      });
     }
 
     await prisma.category.delete({ where: { id } });
