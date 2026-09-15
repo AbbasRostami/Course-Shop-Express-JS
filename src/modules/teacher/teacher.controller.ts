@@ -2,11 +2,13 @@ import { RequestHandler } from "express";
 import { AppError } from "../../utils/AppError.js";
 import { localizePayload } from "../../utils/localize.js";
 import { teacherService } from "./teacher.service.js";
-import { ListTeachersQuery } from "./teacher.validator.js";
+import {
+  ListTeachersAdminQuery,
+  ListTeachersQuery,
+} from "./teacher.validator.js";
 
 // [POST] Create teacher
 export const createTeacherController: RequestHandler = async (req, res) => {
-  // [UPLOAD] Extract avatar URL if uploaded
   let avatar: string | undefined;
   if (req.file) {
     avatar = req.file.path;
@@ -44,7 +46,6 @@ export const updateTeacherController: RequestHandler = async (
   if (req.body.bioFa !== undefined) updateData.bioFa = req.body.bioFa;
   if (req.body.bioEn !== undefined) updateData.bioEn = req.body.bioEn;
 
-  // [UPLOAD] Attach avatar URL if uploaded
   if (req.file?.path) {
     updateData.avatar = req.file.path;
   }
@@ -64,6 +65,26 @@ export const updateTeacherController: RequestHandler = async (
   });
 };
 
+// [PATCH] Toggle teacher visibility
+export const toggleTeacherVisibilityController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const id = req.params.id as string;
+  const { show } = req.body;
+
+  await teacherService.toggleVisibility(id, show);
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      message: req.t(
+        show ? "teacher.success.activated" : "teacher.success.deactivated",
+      ),
+    },
+  });
+};
+
 // [DELETE] Delete teacher
 export const deleteTeacherController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
@@ -75,7 +96,7 @@ export const deleteTeacherController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] List teachers with pagination
+// [GET] Public list teachers
 export const getTeachersController: RequestHandler = async (req, res) => {
   const result = await teacherService.getTeachers(
     req.query as ListTeachersQuery,
@@ -90,7 +111,22 @@ export const getTeachersController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Get teacher by slug
+// [GET] Admin list teachers (including hidden)
+export const getAdminTeachersController: RequestHandler = async (req, res) => {
+  const result = await teacherService.getAdminTeachers(
+    req.query as ListTeachersAdminQuery,
+  );
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
+  });
+};
+
+// [GET] Get teacher by slug (only visible teachers)
 export const getTeacherBySlugController: RequestHandler = async (req, res) => {
   const slug = req.params.slug as string;
   const teacher = await teacherService.getTeacherBySlug(slug);

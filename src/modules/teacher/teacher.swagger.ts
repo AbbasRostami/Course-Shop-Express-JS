@@ -3,15 +3,14 @@ export const teacherSwagger = {
     "/api/teachers": {
       get: {
         tags: ["Teacher"],
-        summary: "Get all teachers",
+        summary: "Get all public teachers",
         description:
-          "Returns list of all teachers with course count. **Text fields (`name`, `slug`, `bio`) are localized based on the `Accept-Language` header (`fa` or `en`).**",
+          "Returns only visible teachers (show=true). Text fields are localized based on `Accept-Language` header.",
         parameters: [
           {
             name: "Accept-Language",
             in: "header",
             schema: { type: "string", enum: ["fa", "en"], default: "fa" },
-            description: "Response language for text fields",
           },
           {
             name: "page",
@@ -27,7 +26,7 @@ export const teacherSwagger = {
             name: "search",
             in: "query",
             schema: { type: "string" },
-            description: "Search across name and bio (both Fa and En columns)",
+            description: "Search across name and bio (Fa + En)",
           },
         ],
         responses: {
@@ -46,16 +45,13 @@ export const teacherSwagger = {
                         bio: "توسعه‌دهنده فول‌استک",
                         avatar:
                           "https://res.cloudinary.com/.../teachers/avatar.jpg",
+                        show: true,
                         coursesCount: 5,
                         createdAt: "2026-01-10T12:00:00.000Z",
                         updatedAt: "2026-01-10T12:00:00.000Z",
                       },
                     ],
-                    pagination: {
-                      total: 3,
-                      page: 1,
-                      limit: 10,
-                    },
+                    pagination: { total: 3, page: 1, limit: 10 },
                   },
                 },
               },
@@ -99,10 +95,8 @@ export const teacherSwagger = {
                     maxLength: 2000,
                     example: "Full-stack developer",
                   },
-                  avatar: {
-                    type: "string",
-                    format: "binary",
-                  },
+                  show: { type: "boolean", default: true, example: true },
+                  avatar: { type: "string", format: "binary" },
                 },
               },
             },
@@ -124,36 +118,82 @@ export const teacherSwagger = {
                       bio: "توسعه‌دهنده فول‌استک",
                       avatar:
                         "https://res.cloudinary.com/.../teachers/avatar.jpg",
+                      show: true,
                     },
                   },
                 },
               },
             },
           },
-          400: {
-            description: `Invalid request - Validation rules:
+          401: { description: "Unauthorized: Invalid or expired token." },
+          403: { description: "Forbidden: Admin access required." },
+        },
+      },
+    },
 
-- nameFa:
-  - Required.
-  - Must be a string.
-  - Min length: 2, Max length: 100.
-
-- nameEn:
-  - Required.
-  - Must be a string.
-  - Min length: 2, Max length: 100.
-
-- bioFa & bioEn:
-  - Optional.
-  - Must be a string.
-  - Max length: 2000.
-
-- avatar:
-  - Optional.
-  - Max size: 2 MB.
-  - Allowed formats: .jpg, .jpeg, .png, .webp.
-
-- Duplicate names may also return 400.`,
+    "/api/teachers/admin": {
+      get: {
+        tags: ["Teacher"],
+        summary: "Get all teachers with pagination (Admin)",
+        description:
+          "Returns all teachers (including hidden) with pagination, search and filter.",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "10" },
+          },
+          {
+            name: "show",
+            in: "query",
+            schema: { type: "string", enum: ["true", "false"] },
+            description: "Filter by visibility status",
+          },
+          {
+            name: "search",
+            in: "query",
+            schema: { type: "string" },
+            description: "Search across name and bio (Fa + En)",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Teachers retrieved with pagination.",
+            content: {
+              "application/json": {
+                example: {
+                  status: "success",
+                  data: {
+                    items: [
+                      {
+                        id: "teacher-uuid",
+                        name: "عباس رستمی",
+                        slug: "abbas-rostami",
+                        bio: "توسعه‌دهنده فول‌استک",
+                        avatar:
+                          "https://res.cloudinary.com/.../teachers/avatar.jpg",
+                        show: true,
+                        coursesCount: 5,
+                        createdAt: "2026-01-10T12:00:00.000Z",
+                        updatedAt: "2026-01-10T12:00:00.000Z",
+                      },
+                    ],
+                    pagination: { total: 25, page: 1, limit: 10 },
+                  },
+                },
+              },
+            },
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -166,7 +206,7 @@ export const teacherSwagger = {
         tags: ["Teacher"],
         summary: "Get teacher by slug (Fa or En)",
         description:
-          "Returns teacher details along with their published courses. **Slug can be Persian or English.** Text fields are localized based on `Accept-Language` header.",
+          "Returns teacher details with their published courses. **Only visible teachers (show=true) are returned.**",
         parameters: [
           {
             name: "Accept-Language",
@@ -178,8 +218,7 @@ export const teacherSwagger = {
             in: "path",
             required: true,
             schema: { type: "string" },
-            description:
-              "Persian or English slug (e.g. `abbas-rostami` or `عباس-رستمی`)",
+            description: "Persian or English slug",
           },
         ],
         responses: {
@@ -197,14 +236,13 @@ export const teacherSwagger = {
                       bio: "Full-stack developer",
                       avatar:
                         "https://res.cloudinary.com/.../teachers/avatar.jpg",
-                      createdAt: "2026-01-10T12:00:00.000Z",
-                      updatedAt: "2026-01-10T12:00:00.000Z",
+                      show: true,
                       courses: [
                         {
                           id: "course-uuid",
                           title: "React Course",
                           slug: "react-course",
-                          description: "Complete guide to React with Next.js",
+                          description: "Complete guide",
                           price: 5000000,
                           imageUrl:
                             "https://res.cloudinary.com/.../courses/react.jpg",
@@ -224,7 +262,7 @@ export const teacherSwagger = {
               },
             },
           },
-          404: { description: "Teacher not found." },
+          404: { description: "Teacher not found or inactive." },
         },
       },
     },
@@ -233,8 +271,6 @@ export const teacherSwagger = {
       put: {
         tags: ["Teacher"],
         summary: "Update a teacher (Admin)",
-        description:
-          "Must be submitted as **multipart/form-data**. All fields are optional. If name changes, slug is auto-regenerated for that language.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -252,20 +288,9 @@ export const teacherSwagger = {
                 properties: {
                   nameFa: { type: "string", minLength: 2, maxLength: 100 },
                   nameEn: { type: "string", minLength: 2, maxLength: 100 },
-                  bioFa: {
-                    type: "string",
-                    maxLength: 2000,
-                    nullable: true,
-                  },
-                  bioEn: {
-                    type: "string",
-                    maxLength: 2000,
-                    nullable: true,
-                  },
-                  avatar: {
-                    type: "string",
-                    format: "binary",
-                  },
+                  bioFa: { type: "string", maxLength: 2000, nullable: true },
+                  bioEn: { type: "string", maxLength: 2000, nullable: true },
+                  avatar: { type: "string", format: "binary" },
                 },
               },
             },
@@ -278,21 +303,10 @@ export const teacherSwagger = {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "مدرس با موفقیت ویرایش شد",
-                  },
+                  data: { message: "مدرس با موفقیت ویرایش شد" },
                 },
               },
             },
-          },
-          400: {
-            description: `Invalid request - Validation rules:
-
-- id (path): Must be a valid UUID v4.
-- nameFa/nameEn: Optional. Min 2, Max 100.
-- bioFa/bioEn: Optional or null. Max 2000.
-- avatar: Optional. Max 2 MB. .jpg, .jpeg, .png, .webp.
-- At least one field required.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
@@ -302,8 +316,7 @@ export const teacherSwagger = {
       delete: {
         tags: ["Teacher"],
         summary: "Delete a teacher (Admin)",
-        description:
-          "Permanently deletes a teacher and their avatar. **Cannot delete a teacher who has courses assigned.**",
+        description: "**Cannot delete a teacher who has courses assigned.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -320,9 +333,7 @@ export const teacherSwagger = {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "مدرس با موفقیت حذف شد",
-                  },
+                  data: { message: "مدرس با موفقیت حذف شد" },
                 },
               },
             },
@@ -334,8 +345,95 @@ export const teacherSwagger = {
                 example: {
                   status: "error",
                   message:
-                    "این مدرس ۳ دوره دارد. ابتدا دوره‌ها را حذف یا به مدرس دیگری منتقل کنید",
+                    "این مدرس 3 دوره دارد. ابتدا دوره‌ها را حذف یا به مدرس دیگری منتقل کنید",
                   code: 400,
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized: Invalid or expired token." },
+          403: { description: "Forbidden: Admin access required." },
+          404: { description: "Teacher not found." },
+        },
+      },
+    },
+
+    "/api/teachers/{id}/visibility": {
+      patch: {
+        tags: ["Teacher"],
+        summary: "Toggle teacher visibility (Admin)",
+        description:
+          "Activates or deactivates a teacher. **When deactivated, all published courses of this teacher will be automatically unpublished.** When re-activated, courses stay unpublished until manually published.",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["show"],
+                properties: {
+                  show: { type: "boolean", example: false },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Teacher visibility updated successfully.",
+            content: {
+              "application/json": {
+                examples: {
+                  disabled: {
+                    value: {
+                      status: "success",
+                      data: {
+                        message:
+                          "مدرس با موفقیت غیرفعال شد. دوره‌های وابسته نیز غیرفعال شدند.",
+                      },
+                    },
+                  },
+                  enabled: {
+                    value: {
+                      status: "success",
+                      data: {
+                        message:
+                          "مدرس با موفقیت فعال شد. دوره‌های او مجدداً قابل انتشار خواهند بود.",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Teacher is already in the requested state.",
+            content: {
+              "application/json": {
+                examples: {
+                  alreadyActive: {
+                    value: {
+                      status: "error",
+                      message: "مدرس از قبل فعال است",
+                      code: 400,
+                    },
+                  },
+                  alreadyInactive: {
+                    value: {
+                      status: "error",
+                      message: "مدرس از قبل غیرفعال است",
+                      code: 400,
+                    },
+                  },
                 },
               },
             },

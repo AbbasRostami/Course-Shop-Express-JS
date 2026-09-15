@@ -170,9 +170,13 @@ model Teacher {
   bioFa     String?
   bioEn     String?
   avatar    String?
+  show      Boolean  @default(true)
+
   courses   Course[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([show])
 }
 
 // COURSE (Bilingual)

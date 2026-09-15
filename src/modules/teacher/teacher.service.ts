@@ -9,11 +9,12 @@ import {
 import { createSlug } from "../../utils/slug.js";
 import {
   CreateTeacherInput,
+  ListTeachersAdminQuery,
   ListTeachersQuery,
   UpdateTeacherInput,
 } from "./teacher.validator.js";
 
-// [DB] Base teacher select fields (bilingual)
+// [DB] Base teacher select fields (bilingual + visibility)
 const teacherSelect = {
   id: true,
   nameFa: true,
@@ -23,6 +24,7 @@ const teacherSelect = {
   bioFa: true,
   bioEn: true,
   avatar: true,
+  show: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.TeacherSelect;
@@ -40,18 +42,17 @@ export const teacherService = {
           bioFa: data.bioFa,
           bioEn: data.bioEn,
           avatar: data.avatar,
+          show: data.show,
         },
         select: teacherSelect,
       });
 
       return teacher;
     } catch (error) {
-      // [CLEANUP] Remove uploaded avatar on failure
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
 
-      // [ERROR] Handle duplicate name/slug
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
@@ -77,7 +78,6 @@ export const teacherService = {
     const existing = await prisma.teacher.findUnique({ where: { id } });
 
     if (!existing) {
-      // [CLEANUP] Remove uploaded avatar if teacher not found
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
@@ -86,7 +86,6 @@ export const teacherService = {
 
     const updateData: Prisma.TeacherUpdateInput = {};
 
-    // [LOGIC] Auto-generate slug on name change
     if (data.nameFa !== undefined) {
       updateData.nameFa = data.nameFa;
       updateData.slugFa = createSlug(data.nameFa);
@@ -100,7 +99,6 @@ export const teacherService = {
     if (data.bioEn !== undefined) updateData.bioEn = data.bioEn;
 
     if (data.avatar) {
-      // [CLEANUP] Remove old avatar before setting new one
       if (existing.avatar) {
         await removeCloudinaryImage(existing.avatar);
       }
@@ -116,7 +114,6 @@ export const teacherService = {
 
       return teacher;
     } catch (error) {
-      // [CLEANUP] Remove uploaded avatar on failure
       if (data.avatar) {
         await removeCloudinaryImage(data.avatar);
       }
@@ -134,6 +131,43 @@ export const teacherService = {
     }
   },
 
+  // [DB] Toggle teacher visibility and cascade unpublish courses
+  async toggleVisibility(id: string, show: boolean) {
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.teacher.findUnique({ where: { id } });
+
+      if (!existing) {
+        throw new AppError("teacher.errors.notFound", 404);
+      }
+
+      // [LOGIC] Prevent redundant toggle
+      if (existing.show === show) {
+        throw new AppError(
+          show
+            ? "teacher.errors.alreadyActive"
+            : "teacher.errors.alreadyInactive",
+          400,
+        );
+      }
+
+      const teacher = await tx.teacher.update({
+        where: { id },
+        data: { show },
+        select: teacherSelect,
+      });
+
+      // [LOGIC] Unpublish related courses when hiding teacher
+      if (!show) {
+        await tx.course.updateMany({
+          where: { teacherId: id, published: true },
+          data: { published: false },
+        });
+      }
+
+      return teacher;
+    });
+  },
+
   // [DB] Delete teacher if no courses assigned
   async deleteTeacher(id: string) {
     const existing = await prisma.teacher.findUnique({
@@ -145,7 +179,6 @@ export const teacherService = {
       throw new AppError("teacher.errors.notFound", 404);
     }
 
-    // [LOGIC] Block delete if courses are assigned
     if (existing._count.courses > 0) {
       throw new AppError("teacher.errors.hasCourses", 400, undefined, {
         count: existing._count.courses,
@@ -154,17 +187,18 @@ export const teacherService = {
 
     await prisma.teacher.delete({ where: { id } });
 
-    // [CLEANUP] Remove avatar from Cloudinary
     if (existing.avatar) {
       await removeCloudinaryImage(existing.avatar);
     }
   },
 
-  // [DB] Get paginated teachers with bilingual search
+  // [DB] Get public paginated teachers (show=true only) with bilingual search
   async getTeachers(query: ListTeachersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
-    const where: Prisma.TeacherWhereInput = {};
+    const where: Prisma.TeacherWhereInput = {
+      show: true,
+    };
 
     if (query.search) {
       where.OR = [
@@ -189,7 +223,6 @@ export const teacherService = {
       prisma.teacher.count({ where }),
     ]);
 
-    // [UTIL] Flatten _count into coursesCount
     const formattedItems = items.map(({ _count, ...teacher }) => ({
       ...teacher,
       coursesCount: _count.courses,
@@ -201,11 +234,56 @@ export const teacherService = {
     };
   },
 
-  // [DB] Get teacher with published courses by slug (Fa or En)
+  // [DB] Admin: Get all teachers (including hidden) with filters
+  async getAdminTeachers(query: ListTeachersAdminQuery) {
+    const { skip, take, page, limit } = parsePagination(query);
+
+    const where: Prisma.TeacherWhereInput = {};
+
+    if (query.show !== undefined) {
+      where.show = query.show === "true";
+    }
+
+    if (query.search) {
+      where.OR = [
+        { nameFa: { contains: query.search, mode: "insensitive" } },
+        { nameEn: { contains: query.search, mode: "insensitive" } },
+        { bioFa: { contains: query.search, mode: "insensitive" } },
+        { bioEn: { contains: query.search, mode: "insensitive" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.teacher.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: "desc" },
+        select: {
+          ...teacherSelect,
+          _count: { select: { courses: true } },
+        },
+      }),
+      prisma.teacher.count({ where }),
+    ]);
+
+    const formattedItems = items.map(({ _count, ...teacher }) => ({
+      ...teacher,
+      coursesCount: _count.courses,
+    }));
+
+    return {
+      items: formattedItems,
+      pagination: buildPaginationMeta(total, page, limit),
+    };
+  },
+
+  // [DB] Get teacher with published courses by slug (Fa or En, only if visible)
   async getTeacherBySlug(slug: string) {
     const teacher = await prisma.teacher.findFirst({
       where: {
         OR: [{ slugFa: slug }, { slugEn: slug }],
+        show: true,
       },
       select: {
         ...teacherSelect,
@@ -250,7 +328,6 @@ export const teacherService = {
 
     return {
       ...rest,
-      // [UTIL] Flatten _count into studentsCount
       courses: courses.map(({ _count, ...course }) => ({
         ...course,
         studentsCount: _count.enrollments,

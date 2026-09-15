@@ -174,11 +174,10 @@ export const courseService = {
     }
   },
 
-  // [DB] Toggle course publish status
   async togglePublish(id: string, published: boolean) {
     const existing = await prisma.course.findUnique({
       where: { id },
-      include: { category: true },
+      include: { category: true, teacher: true }, // <-- teacher اضافه شد
     });
 
     if (!existing) {
@@ -196,6 +195,11 @@ export const courseService = {
 
     if (published && existing.category && !existing.category.show) {
       throw new AppError("course.errors.categoryHidden", 400);
+    }
+
+    // [LOGIC] Block publish if teacher is hidden (اضافه شد)
+    if (published && existing.teacher && !existing.teacher.show) {
+      throw new AppError("teacher.errors.categoryHidden", 400);
     }
 
     const course = await prisma.course.update({
