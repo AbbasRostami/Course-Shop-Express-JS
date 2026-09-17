@@ -98,7 +98,8 @@ export const cartService = {
   },
 
   // [LOGIC] Sync guest cart with user cart (merge after login)
-  async syncCart(userId: string, data: SyncCartInput) {
+  // [LOGIC] Sync guest cart with user cart (merge after login)
+  async syncCart(userId: string, data: SyncCartInput): Promise<void> {
     const { courseIds } = data;
 
     // [LOGIC] Deduplicate incoming IDs
@@ -133,29 +134,12 @@ export const cartService = {
     const existingCartIds = new Set(cart.items.map((i) => i.courseId));
 
     // [LOGIC] Filter out invalid, purchased, or duplicate courses
-    const toAdd: string[] = [];
-    const skippedInvalid: string[] = [];
-    const skippedEnrolled: string[] = [];
-    const skippedDuplicate: string[] = [];
-
-    for (const courseId of uniqueIds) {
-      if (!validCourseIds.has(courseId)) {
-        skippedInvalid.push(courseId);
-        continue;
-      }
-
-      if (enrolledIds.has(courseId)) {
-        skippedEnrolled.push(courseId);
-        continue;
-      }
-
-      if (existingCartIds.has(courseId)) {
-        skippedDuplicate.push(courseId);
-        continue;
-      }
-
-      toAdd.push(courseId);
-    }
+    const toAdd = uniqueIds.filter(
+      (courseId) =>
+        validCourseIds.has(courseId) &&
+        !enrolledIds.has(courseId) &&
+        !existingCartIds.has(courseId),
+    );
 
     // [DB] Bulk insert new items
     if (toAdd.length > 0) {
@@ -167,21 +151,7 @@ export const cartService = {
         skipDuplicates: true,
       });
     }
-
-    const totalSkipped =
-      skippedInvalid.length + skippedEnrolled.length + skippedDuplicate.length;
-
-    return {
-      added: toAdd.length,
-      skipped: totalSkipped,
-      details: {
-        skippedInvalid,
-        skippedEnrolled,
-        skippedDuplicate,
-      },
-    };
   },
-
   // [LOGIC] Get cart with discount calculation
   async getCart(userId: string) {
     const cart = await this.getOrCreateCart(userId);

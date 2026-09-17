@@ -23,19 +23,12 @@ export const syncCartController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
   const body = req.body as SyncCartInput;
 
-  const result = await cartService.syncCart(userId, body);
-  const cart = await cartService.getCart(userId);
+  await cartService.syncCart(userId, body);
 
   return res.status(200).json({
     status: "success",
     data: {
       message: req.t("cart.success.synced"),
-      summary: {
-        added: result.added,
-        skipped: result.skipped,
-      },
-      details: result.details,
-      cart: localizePayload(cart, req.locale),
     },
   });
 };

@@ -118,21 +118,13 @@ export const cartSwagger = {
         },
       },
     },
-
     "/api/cart/sync": {
       post: {
         tags: ["Cart"],
         summary: "Sync guest cart with user cart (after login)",
         description:
-          "Merges the guest cart (stored in browser LocalStorage) with the authenticated user's cart. **Automatically filters out invalid, free, purchased, or duplicate courses.** Returns a full sync report along with the updated localized cart.",
+          "Merges the guest cart (stored in browser LocalStorage) with the authenticated user's cart. **Automatically filters out invalid, free, purchased, or duplicate courses in the background.** After success, the frontend should refetch `GET /api/cart` to get the updated state.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
-        parameters: [
-          {
-            name: "Accept-Language",
-            in: "header",
-            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
-          },
-        ],
         requestBody: {
           required: true,
           content: {
@@ -165,13 +157,6 @@ export const cartSwagger = {
                   status: "success",
                   data: {
                     message: "سبد خرید با موفقیت همگام‌سازی شد",
-                    summary: { added: 2, skipped: 0 },
-                    details: {
-                      skippedInvalid: [],
-                      skippedEnrolled: [],
-                      skippedDuplicate: [],
-                    },
-                    cart: cartExample,
                   },
                 },
               },
@@ -179,7 +164,7 @@ export const cartSwagger = {
           },
           400: {
             description:
-              "Invalid request - array length constraint rules exceeded (min 1, max 50).",
+              "Invalid request - courseIds must be a non-empty array (min 1, max 50).",
           },
           401: { description: "Unauthorized: Invalid or expired token." },
         },
