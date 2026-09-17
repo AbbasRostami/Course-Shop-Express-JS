@@ -17,7 +17,7 @@ export const commentBaseInclude = {
   },
 } satisfies Prisma.CommentInclude;
 
-// [DB] Admin comment include - with parent, course and post
+// [DB] Admin comment include - with parent, course and post (bilingual)
 export const commentAdminInclude = {
   user: {
     select: {
@@ -36,15 +36,19 @@ export const commentAdminInclude = {
   course: {
     select: {
       id: true,
-      title: true,
-      slug: true,
+      titleFa: true,
+      titleEn: true,
+      slugFa: true,
+      slugEn: true,
     },
   },
   post: {
     select: {
       id: true,
-      title: true,
-      slug: true,
+      titleFa: true,
+      titleEn: true,
+      slugFa: true,
+      slugEn: true,
     },
   },
   _count: {

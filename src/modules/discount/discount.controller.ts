@@ -11,7 +11,7 @@ export const createDiscountController: RequestHandler = async (req, res) => {
 
   return res.status(201).json({
     status: "success",
-    data: { message: "کد تخفیف با موفقیت ایجاد شد" },
+    data: { message: req.t("discount.success.created") },
   });
 };
 
@@ -35,7 +35,9 @@ export const toggleDiscountController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: discount.active ? "کد تخفیف فعال شد" : "کد تخفیف غیرفعال شد",
+      message: discount.active
+        ? req.t("discount.success.activated")
+        : req.t("discount.success.deactivated"),
     },
   });
 };
@@ -47,7 +49,7 @@ export const deleteDiscountController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "کد تخفیف با موفقیت حذف شد" },
+    data: { message: req.t("discount.success.deleted") },
   });
 };
 
@@ -61,7 +63,10 @@ export const applyDiscountController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      discount: result.discount,
+    },
   });
 };
 
@@ -72,6 +77,6 @@ export const removeDiscountController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: { message: req.t(result.message as any) },
   });
 };

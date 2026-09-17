@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import { Prisma } from "../../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
@@ -28,7 +29,7 @@ const walletWithUser = {
   },
 };
 
-// [DB] Transaction include with user and course
+// [DB] Transaction include with user and course (bilingual)
 const transactionWithUser = {
   user: {
     select: {
@@ -40,8 +41,10 @@ const transactionWithUser = {
   course: {
     select: {
       id: true,
-      title: true,
-      slug: true,
+      titleFa: true,
+      titleEn: true,
+      slugFa: true,
+      slugEn: true,
     },
   },
 };
@@ -62,11 +65,15 @@ export const walletService = {
     return wallet;
   },
 
-  // [PAYMENT] Initiate wallet charge via ZarinPal
-  async chargeWallet(userId: string, data: ChargeWalletInput) {
+  // [PAYMENT] Initiate wallet charge via ZarinPal (with locale support)
+  async chargeWallet(
+    userId: string,
+    data: ChargeWalletInput,
+    locale: "fa" | "en",
+  ) {
     const backendUrl = process.env.BACKEND_URL;
     if (!backendUrl) {
-      throw new AppError("BACKEND_URL در محیط تعریف نشده است", 500);
+      throw new AppError("wallet.errors.backendUrlNotDefined", 500);
     }
 
     const [_, user] = await Promise.all([
@@ -78,13 +85,18 @@ export const walletService = {
     ]);
 
     if (!user) {
-      throw new AppError("کاربر یافت نشد", 404);
+      throw new AppError("wallet.errors.userNotFound", 404);
     }
+
+    const description = i18next.t("wallet.description.charge", {
+      amount: data.amount,
+      lng: locale,
+    });
 
     // [PAYMENT] Request authority from ZarinPal
     const zarinpalResult = await requestPayment({
       amount: data.amount,
-      description: `شارژ کیف پول به مبلغ ${data.amount} ریال`,
+      description,
       callbackUrl: `${backendUrl}/api/wallet/verify`,
       email: user.email,
       mobile: user.phone || undefined,
@@ -92,10 +104,14 @@ export const walletService = {
 
     if (!zarinpalResult.success || !zarinpalResult.authority) {
       throw new AppError(
-        zarinpalResult.error || "خطا در ارتباط با درگاه پرداخت",
+        zarinpalResult.error || "zarinpal.errors.connectionError",
         500,
       );
     }
+
+    const dbDescription = i18next.t("wallet.description.chargeSimple", {
+      lng: locale,
+    });
 
     // [DB] Store pending transaction
     const transaction = await prisma.transaction.create({
@@ -104,7 +120,7 @@ export const walletService = {
         type: "CHARGE",
         status: "PENDING",
         authority: zarinpalResult.authority,
-        description: `شارژ کیف پول`,
+        description: dbDescription,
         userId,
       },
     });
@@ -125,7 +141,7 @@ export const walletService = {
     if (!transaction) {
       return {
         success: false,
-        reason: "تراکنش یافت نشد",
+        reason: "wallet.errors.transactionNotFound",
         transaction: null,
         newBalance: null,
         refId: null,
@@ -136,9 +152,10 @@ export const walletService = {
     if (transaction.status !== "PENDING") {
       return {
         success: transaction.status === "SUCCESS",
-        reason: transaction.status !== "SUCCESS"
-          ? "تراکنش قبلاً پردازش شده است"
-          : undefined,
+        reason:
+          transaction.status !== "SUCCESS"
+            ? "wallet.errors.alreadyProcessed"
+            : undefined,
         transaction,
         newBalance: null,
         refId: null,
@@ -154,7 +171,7 @@ export const walletService = {
 
       return {
         success: false,
-        reason: "پرداخت توسط کاربر لغو شد",
+        reason: "wallet.errors.cancelledByCustomer",
         transaction,
         newBalance: null,
         refId: null,
@@ -175,7 +192,7 @@ export const walletService = {
 
       return {
         success: false,
-        reason: verifyResult.error || "پرداخت ناموفق بود",
+        reason: verifyResult.error || "wallet.errors.paymentFailed",
         transaction,
         newBalance: null,
         refId: null,
@@ -222,7 +239,15 @@ export const walletService = {
         take,
         orderBy: { createdAt: "desc" },
         include: {
-          course: { select: { id: true, title: true, slug: true } },
+          course: {
+            select: {
+              id: true,
+              titleFa: true,
+              titleEn: true,
+              slugFa: true,
+              slugEn: true,
+            },
+          },
         },
       }),
       prisma.transaction.count({ where }),

@@ -22,7 +22,11 @@ const createToggleController = (targetType: ReactionTarget): RequestHandler => {
 
     return res.status(200).json({
       status: "success",
-      data: result,
+      data: {
+        message: req.t(result.message as any),
+        myReaction: result.myReaction,
+        reactions: result.reactions,
+      },
     });
   };
 };

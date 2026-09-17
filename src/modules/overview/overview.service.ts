@@ -52,13 +52,14 @@ export const overviewService = {
   async getAdminUserStats() {
     const { startOfThisWeek, startOfThisMonth } = getDateRanges();
 
-    const [total, verified, admins, newThisWeek, newThisMonth] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { isVerified: true } }),
-      prisma.user.count({ where: { role: "ADMIN" } }),
-      prisma.user.count({ where: { createdAt: { gte: startOfThisWeek } } }),
-      prisma.user.count({ where: { createdAt: { gte: startOfThisMonth } } }),
-    ]);
+    const [total, verified, admins, newThisWeek, newThisMonth] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { isVerified: true } }),
+        prisma.user.count({ where: { role: "ADMIN" } }),
+        prisma.user.count({ where: { createdAt: { gte: startOfThisWeek } } }),
+        prisma.user.count({ where: { createdAt: { gte: startOfThisMonth } } }),
+      ]);
 
     return {
       total,
@@ -104,7 +105,8 @@ export const overviewService = {
 
   // [DB] Revenue stats - sales and wallet charges by date range
   async getAdminRevenueStats() {
-    const { startOfToday, startOfThisWeek, startOfThisMonth } = getDateRanges();
+    const { startOfToday, startOfThisWeek, startOfThisMonth } =
+      getDateRanges();
 
     const whereOrderPaid = { status: "PAID" as const };
     const whereChargeSuccess = {
@@ -113,19 +115,50 @@ export const overviewService = {
     };
 
     const [
-      salesTotal, salesToday, salesThisWeek, salesThisMonth,
-      chargeTotal, chargeToday, chargeThisWeek, chargeThisMonth,
+      salesTotal,
+      salesToday,
+      salesThisWeek,
+      salesThisMonth,
+      chargeTotal,
+      chargeToday,
+      chargeThisWeek,
+      chargeThisMonth,
     ] = await Promise.all([
-      // [DB] Sales aggregates
-      prisma.order.aggregate({ _sum: { totalAmount: true }, where: whereOrderPaid }),
-      prisma.order.aggregate({ _sum: { totalAmount: true }, where: { ...whereOrderPaid, createdAt: { gte: startOfToday } } }),
-      prisma.order.aggregate({ _sum: { totalAmount: true }, where: { ...whereOrderPaid, createdAt: { gte: startOfThisWeek } } }),
-      prisma.order.aggregate({ _sum: { totalAmount: true }, where: { ...whereOrderPaid, createdAt: { gte: startOfThisMonth } } }),
-      // [DB] Wallet charge aggregates
-      prisma.transaction.aggregate({ _sum: { amount: true }, where: whereChargeSuccess }),
-      prisma.transaction.aggregate({ _sum: { amount: true }, where: { ...whereChargeSuccess, createdAt: { gte: startOfToday } } }),
-      prisma.transaction.aggregate({ _sum: { amount: true }, where: { ...whereChargeSuccess, createdAt: { gte: startOfThisWeek } } }),
-      prisma.transaction.aggregate({ _sum: { amount: true }, where: { ...whereChargeSuccess, createdAt: { gte: startOfThisMonth } } }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: whereOrderPaid,
+      }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { ...whereOrderPaid, createdAt: { gte: startOfToday } },
+      }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { ...whereOrderPaid, createdAt: { gte: startOfThisWeek } },
+      }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { ...whereOrderPaid, createdAt: { gte: startOfThisMonth } },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: whereChargeSuccess,
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { ...whereChargeSuccess, createdAt: { gte: startOfToday } },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { ...whereChargeSuccess, createdAt: { gte: startOfThisWeek } },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          ...whereChargeSuccess,
+          createdAt: { gte: startOfThisMonth },
+        },
+      }),
     ]);
 
     return {
@@ -151,16 +184,27 @@ export const overviewService = {
     const [total, active, expiringThisWeek, topUsed] = await Promise.all([
       prisma.discount.count(),
       prisma.discount.count({ where: { active: true } }),
-      // [DB] Active discounts expiring within 7 days
       prisma.discount.findMany({
         where: { active: true, expiresAt: { lte: next7Days } },
-        select: { id: true, code: true, type: true, value: true, expiresAt: true },
+        select: {
+          id: true,
+          code: true,
+          type: true,
+          value: true,
+          expiresAt: true,
+        },
         take: 5,
         orderBy: { expiresAt: "asc" },
       }),
-      // [DB] Top 5 most used discounts
       prisma.discount.findMany({
-        select: { id: true, code: true, type: true, value: true, usedCount: true, maxUses: true },
+        select: {
+          id: true,
+          code: true,
+          type: true,
+          value: true,
+          usedCount: true,
+          maxUses: true,
+        },
         take: 5,
         orderBy: { usedCount: "desc" },
       }),
@@ -169,25 +213,41 @@ export const overviewService = {
     return { total, active, expiringThisWeek, topUsed };
   },
 
-  // [DB] Comment stats - by status and latest pending
+  // [DB] Comment stats - by status and latest pending (bilingual selects)
   async getAdminCommentStats() {
-    const [total, approved, pending, rejected, latestPending] = await Promise.all([
-      prisma.comment.count(),
-      prisma.comment.count({ where: { status: "APPROVED" } }),
-      prisma.comment.count({ where: { status: "PENDING" } }),
-      prisma.comment.count({ where: { status: "REJECTED" } }),
-      // [DB] Latest 5 pending comments with context
-      prisma.comment.findMany({
-        where: { status: "PENDING" },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          course: { select: { id: true, title: true, slug: true } },
-          post: { select: { id: true, title: true, slug: true } },
-        },
-        take: 5,
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+    const [total, approved, pending, rejected, latestPending] =
+      await Promise.all([
+        prisma.comment.count(),
+        prisma.comment.count({ where: { status: "APPROVED" } }),
+        prisma.comment.count({ where: { status: "PENDING" } }),
+        prisma.comment.count({ where: { status: "REJECTED" } }),
+        prisma.comment.findMany({
+          where: { status: "PENDING" },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            course: {
+              select: {
+                id: true,
+                titleFa: true,
+                titleEn: true,
+                slugFa: true,
+                slugEn: true,
+              },
+            },
+            post: {
+              select: {
+                id: true,
+                titleFa: true,
+                titleEn: true,
+                slugFa: true,
+                slugEn: true,
+              },
+            },
+          },
+          take: 5,
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
 
     return { total, approved, pending, rejected, latestPending };
   },
@@ -202,27 +262,33 @@ export const overviewService = {
     return { total, published, unpublished: total - published };
   },
 
-  // [DB] Enrollment stats - total, by date, top courses
+  // [DB] Enrollment stats - total, by date, top courses (bilingual selects)
   async getAdminEnrollmentStats() {
     const { startOfThisWeek, startOfThisMonth } = getDateRanges();
 
-    const [total, thisWeekCount, thisMonthCount, topCourses] = await Promise.all([
-      prisma.enrollment.count(),
-      prisma.enrollment.count({ where: { createdAt: { gte: startOfThisWeek } } }),
-      prisma.enrollment.count({ where: { createdAt: { gte: startOfThisMonth } } }),
-      // [DB] Top 5 courses by enrollment count
-      prisma.course.findMany({
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          imageUrl: true,
-          _count: { select: { enrollments: true } },
-        },
-        take: 5,
-        orderBy: { enrollments: { _count: "desc" } },
-      }),
-    ]);
+    const [total, thisWeekCount, thisMonthCount, topCourses] =
+      await Promise.all([
+        prisma.enrollment.count(),
+        prisma.enrollment.count({
+          where: { createdAt: { gte: startOfThisWeek } },
+        }),
+        prisma.enrollment.count({
+          where: { createdAt: { gte: startOfThisMonth } },
+        }),
+        prisma.course.findMany({
+          select: {
+            id: true,
+            titleFa: true,
+            titleEn: true,
+            slugFa: true,
+            slugEn: true,
+            imageUrl: true,
+            _count: { select: { enrollments: true } },
+          },
+          take: 5,
+          orderBy: { enrollments: { _count: "desc" } },
+        }),
+      ]);
 
     return {
       total,
@@ -230,8 +296,10 @@ export const overviewService = {
       thisMonth: thisMonthCount,
       topCourses: topCourses.map((c) => ({
         id: c.id,
-        title: c.title,
-        slug: c.slug,
+        titleFa: c.titleFa,
+        titleEn: c.titleEn,
+        slugFa: c.slugFa,
+        slugEn: c.slugEn,
         imageUrl: c.imageUrl,
         enrollments: c._count.enrollments,
       })),

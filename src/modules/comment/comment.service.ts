@@ -135,7 +135,7 @@ export const commentService = {
   async createComment(userId: string, data: CreateCommentInput) {
     const { content, courseId, postId, parentId } = data;
 
-    // [DB] Validate course exists and is published
+    // [DB] Validate course exists and is published (Fa or En slug support)
     if (courseId) {
       const course = await prisma.course.findFirst({
         where: {
@@ -147,11 +147,11 @@ export const commentService = {
       });
 
       if (!course) {
-        throw new AppError("دوره مورد نظر یافت نشد", 404);
+        throw new AppError("comment.errors.courseNotFound", 404);
       }
     }
 
-    // [DB] Validate post exists and is published
+    // [DB] Validate post exists and is published (Fa or En slug support)
     if (postId) {
       const post = await prisma.post.findFirst({
         where: {
@@ -163,7 +163,7 @@ export const commentService = {
       });
 
       if (!post) {
-        throw new AppError("پست مورد نظر یافت نشد", 404);
+        throw new AppError("comment.errors.postNotFound", 404);
       }
     }
 
@@ -175,15 +175,15 @@ export const commentService = {
       });
 
       if (!parent) {
-        throw new AppError("کامنت والد یافت نشد", 404);
+        throw new AppError("comment.errors.parentNotFound", 404);
       }
 
       if (courseId && parent.courseId !== courseId) {
-        throw new AppError("parentId متعلق به این دوره نیست", 400);
+        throw new AppError("comment.errors.parentCourseMismatch", 400);
       }
 
       if (postId && parent.postId !== postId) {
-        throw new AppError("parentId متعلق به این پست نیست", 400);
+        throw new AppError("comment.errors.parentPostMismatch", 400);
       }
     }
 
@@ -212,15 +212,15 @@ export const commentService = {
 
     const course = await prisma.course.findFirst({
       where: {
-        slug,
+        OR: [{ slugFa: slug }, { slugEn: slug }],
         published: true,
         category: { show: true },
       },
-      select: { id: true, title: true, slug: true },
+      select: { id: true },
     });
 
     if (!course) {
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("comment.errors.courseNotFound", 404);
     }
 
     const rootWhere: Prisma.CommentWhereInput = {
@@ -240,7 +240,6 @@ export const commentService = {
       prisma.comment.count({ where: rootWhere }),
     ]);
 
-    // [LOGIC] Fetch all nested replies
     const flatComments = await fetchCommentDescendants(
       { courseId: course.id },
       rootComments,
@@ -248,7 +247,6 @@ export const commentService = {
 
     const tree = buildCommentTree(flatComments);
 
-    // [DB] Attach reactions per comment
     const commentIds = flatComments.map((c) => c.id);
     const reactionMap = await getReactionCountsForList(
       "commentId",
@@ -274,15 +272,15 @@ export const commentService = {
 
     const post = await prisma.post.findFirst({
       where: {
-        slug,
+        OR: [{ slugFa: slug }, { slugEn: slug }],
         published: true,
         category: { show: true },
       },
-      select: { id: true, title: true, slug: true },
+      select: { id: true },
     });
 
     if (!post) {
-      throw new AppError("پست مورد نظر یافت نشد", 404);
+      throw new AppError("comment.errors.postNotFound", 404);
     }
 
     const rootWhere: Prisma.CommentWhereInput = {
@@ -302,7 +300,6 @@ export const commentService = {
       prisma.comment.count({ where: rootWhere }),
     ]);
 
-    // [LOGIC] Fetch all nested replies
     const flatComments = await fetchCommentDescendants(
       { postId: post.id },
       rootComments,
@@ -310,7 +307,6 @@ export const commentService = {
 
     const tree = buildCommentTree(flatComments);
 
-    // [DB] Attach reactions per comment
     const commentIds = flatComments.map((c) => c.id);
     const reactionMap = await getReactionCountsForList(
       "commentId",
@@ -392,17 +388,16 @@ export const commentService = {
     const comment = await prisma.comment.findUnique({ where: { id } });
 
     if (!comment) {
-      throw new AppError("کامنت مورد نظر یافت نشد", 404);
+      throw new AppError("comment.errors.notFound", 404);
     }
 
-    // [LOGIC] Prevent redundant status change
     if (comment.status === status) {
-      const msg =
+      const msgKey =
         status === "APPROVED"
-          ? "این کامنت قبلاً تأیید شده است"
-          : "این کامنت قبلاً رد شده است";
+          ? "comment.errors.alreadyApproved"
+          : "comment.errors.alreadyRejected";
 
-      throw new AppError(msg, 409);
+      throw new AppError(msgKey, 409);
     }
 
     const updated = await prisma.comment.update({
@@ -422,12 +417,12 @@ export const commentService = {
     });
 
     if (!comment) {
-      throw new AppError("کامنت مورد نظر یافت نشد", 404);
+      throw new AppError("comment.errors.notFound", 404);
     }
 
     // [AUTH] Block non-owner non-admin
     if (!isAdmin && comment.userId !== userId) {
-      throw new AppError("شما اجازه حذف این کامنت را ندارید", 403);
+      throw new AppError("comment.errors.forbiddenDelete", 403);
     }
 
     await prisma.comment.delete({ where: { id: commentId } });

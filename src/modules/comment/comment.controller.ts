@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { CommentStatus } from "../../../generated/prisma/client.js";
 import { getUserIdFromRequest } from "../../utils/getUserIdFromRequest.js";
+import { localizePayload } from "../../utils/localize.js";
 import { commentService } from "./comment.service.js";
 import {
   CreateCommentInput,
@@ -19,7 +20,7 @@ export const createCommentController: RequestHandler = async (req, res) => {
 
   return res.status(201).json({
     status: "success",
-    data: { message: "کامنت با موفقیت ثبت شد و در انتظار تأیید است" },
+    data: { message: req.t("comment.success.created") },
   });
 };
 
@@ -36,7 +37,10 @@ export const getCourseCommentsController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -53,7 +57,10 @@ export const getPostCommentsController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -68,7 +75,10 @@ export const getMyCommentsController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -80,7 +90,10 @@ export const getAdminCommentsController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -92,7 +105,7 @@ export const approveCommentController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "کامنت با موفقیت تأیید شد" },
+    data: { message: req.t("comment.success.approved") },
   });
 };
 
@@ -104,7 +117,7 @@ export const rejectCommentController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "کامنت با موفقیت رد شد" },
+    data: { message: req.t("comment.success.rejected") },
   });
 };
 
@@ -118,6 +131,6 @@ export const deleteCommentController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "کامنت با موفقیت حذف شد" },
+    data: { message: req.t("comment.success.deleted") },
   });
 };

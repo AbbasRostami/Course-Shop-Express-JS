@@ -5,28 +5,28 @@ export const createDiscountSchema = z
   .object({
     body: z.object({
       code: z
-        .string({ error: "کد الزامی است" })
-        .min(3, "کد باید حداقل ۳ کاراکتر باشد")
-        .max(50, "کد نباید بیشتر از ۵۰ کاراکتر باشد")
-        .regex(/^[A-Z0-9_-]+$/i, "کد فقط می‌تواند شامل حروف، اعداد، _ و - باشد")
+        .string({ error: "discount.validation.codeRequired" })
+        .min(3, "discount.validation.codeMin")
+        .max(50, "discount.validation.codeMax")
+        .regex(/^[A-Z0-9_-]+$/i, "discount.validation.codeRegex")
         .transform((val) => val.toUpperCase()),
       type: z.enum(["PERCENTAGE", "AMOUNT"], {
-        error: "نوع تخفیف باید PERCENTAGE یا AMOUNT باشد",
+        error: "discount.validation.typeInvalid",
       }),
       value: z.coerce
-        .number({ error: "مقدار الزامی است" })
-        .int("مقدار باید عدد صحیح باشد")
-        .positive("مقدار باید مثبت باشد"),
+        .number({ error: "discount.validation.valueRequired" })
+        .int("discount.validation.valueInt")
+        .positive("discount.validation.valuePositive"),
       maxUses: z.coerce
-        .number({ error: "حداکثر تعداد استفاده الزامی است" })
+        .number({ error: "discount.validation.maxUsesRequired" })
         .int()
-        .min(1, "حداقل ۱")
-        .max(10000, "حداکثر ۱۰۰۰۰"),
+        .min(1, "discount.validation.maxUsesMin")
+        .max(10000, "discount.validation.maxUsesMax"),
       expiresInDays: z.coerce
-        .number({ error: "تعداد روز انقضا الزامی است" })
+        .number({ error: "discount.validation.expiresRequired" })
         .int()
-        .min(1, "حداقل ۱ روز")
-        .max(365, "حداکثر ۳۶۵ روز"),
+        .min(1, "discount.validation.expiresMin")
+        .max(365, "discount.validation.expiresMax"),
     }),
   })
   .refine(
@@ -38,8 +38,7 @@ export const createDiscountSchema = z
       return data.body.value >= 1000;
     },
     {
-      message:
-        "برای درصد مقدار باید بین ۱-۱۰۰ و برای مقدار حداقل ۱۰۰۰ ریال باشد",
+      message: "discount.validation.refineMessage",
       path: ["body", "value"],
     },
   );
@@ -47,8 +46,14 @@ export const createDiscountSchema = z
 // [VALID] List discounts schema
 export const listDiscountsSchema = z.object({
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z
+      .string()
+      .regex(/^\d+$/, "discount.validation.pageNumber")
+      .optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "discount.validation.limitNumber")
+      .optional(),
     active: z.enum(["true", "false"]).optional(),
     search: z.string().max(100).optional(),
   }),
@@ -57,14 +62,14 @@ export const listDiscountsSchema = z.object({
 // [VALID] Toggle discount schema
 export const toggleDiscountSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("discount.validation.idInvalid"),
   }),
 });
 
 // [VALID] Delete discount schema
 export const deleteDiscountSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("discount.validation.idInvalid"),
   }),
 });
 
@@ -72,8 +77,8 @@ export const deleteDiscountSchema = z.object({
 export const applyDiscountSchema = z.object({
   body: z.object({
     code: z
-      .string({ error: "کد الزامی است" })
-      .min(1, "کد نمی‌تواند خالی باشد")
+      .string({ error: "discount.validation.codeRequired" })
+      .min(1, "discount.validation.codeEmpty")
       .max(50)
       .transform((val) => val.toUpperCase().trim()),
   }),

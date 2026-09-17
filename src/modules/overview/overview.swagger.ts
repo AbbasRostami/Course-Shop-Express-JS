@@ -76,7 +76,7 @@ const adminCommentExample = {
       user: {
         id: "user-uuid",
         name: "علی",
-        email: "ali@example.com",
+        email: "al***@example.com",
       },
       course: {
         id: "course-uuid",
@@ -128,6 +128,13 @@ const forbiddenResponse = {
   403: { description: "Forbidden: Admin access required." },
 };
 
+const localeHeader = {
+  name: "Accept-Language",
+  in: "header",
+  schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+  description: "Localization for course/post titles in nested data",
+};
+
 export const overviewSwagger = {
   paths: {
     "/api/overview/admin": {
@@ -135,8 +142,9 @@ export const overviewSwagger = {
         tags: ["Overview"],
         summary: "Get full admin overview (all sections)",
         description:
-          "Returns aggregated stats for all admin sections including users, courses, orders, revenue (sales + wallet charges), discounts, comments, posts, and enrollments.",
+          "Returns aggregated stats for all admin sections including users, courses, orders, revenue, discounts, comments, posts, and enrollments. **Course/post titles in nested data (comments, topCourses) are localized based on `Accept-Language` header.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [localeHeader],
         responses: {
           200: {
             description: "Stats for all admin sections.",
@@ -230,12 +238,10 @@ export const overviewSwagger = {
         summary: "Admin: Revenue stats (sales + wallet charges)",
         description:
           "Revenue statistics split into two categories:\n\n" +
-          "**📊 sales**: Total revenue from paid orders\n" +
-          "- Source: `Order.totalAmount` where `status = PAID`\n" +
-          "- Includes final amount after discount deduction\n\n" +
-          "**💳 walletCharges**: Total wallet top-ups\n" +
-          "- Source: `Transaction.amount` where `type = CHARGE` and `status = SUCCESS`\n\n" +
-          "Each category includes: `total`, `today`, `thisWeek`, `thisMonth` (in Toman)",
+          "**Sales**: Total revenue from paid orders\n" +
+          "- Source: `Order.totalAmount` where `status = PAID`\n\n" +
+          "**Wallet Charges**: Total wallet top-ups\n" +
+          "- Source: `Transaction.amount` where `type = CHARGE` and `status = SUCCESS`",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         responses: {
           200: {
@@ -283,7 +289,10 @@ export const overviewSwagger = {
       get: {
         tags: ["Overview"],
         summary: "Admin: Comments stats",
+        description:
+          "Includes latest pending comments. **Course/post titles are localized based on `Accept-Language`.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [localeHeader],
         responses: {
           200: {
             description: "Stats of comments.",
@@ -329,7 +338,10 @@ export const overviewSwagger = {
       get: {
         tags: ["Overview"],
         summary: "Admin: Enrollments stats",
+        description:
+          "Includes top 5 courses by enrollment count. **Course titles are localized based on `Accept-Language`.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [localeHeader],
         responses: {
           200: {
             description: "Stats of course enrollments.",

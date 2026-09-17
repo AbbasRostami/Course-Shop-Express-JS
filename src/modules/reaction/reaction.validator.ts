@@ -1,14 +1,14 @@
 import { z } from "zod";
-import { ReactionCounts } from "../../utils/reactionHelper";
+import { ReactionCounts } from "../../utils/reactionHelper.js";
 
 // [VALID] Toggle reaction schema
 export const toggleReactionSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("reaction.validation.idInvalid"),
   }),
   body: z.object({
     type: z.enum(["LIKE", "DISLIKE"], {
-      error: "type باید LIKE یا DISLIKE باشد",
+      error: "reaction.validation.typeInvalid",
     }),
   }),
 });

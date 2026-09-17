@@ -17,18 +17,23 @@ const targetFieldMap: Record<
   POST: "postId",
 };
 
-// [UTIL] Build reaction result message
-const getMessage = (
+// [UTIL] Build reaction result translation key
+const getMessageKey = (
   previousType: "LIKE" | "DISLIKE" | null,
   currentType: "LIKE" | "DISLIKE" | null,
 ): string => {
-  if (!previousType && currentType === "LIKE") return "لایک شما ثبت شد";
-  if (!previousType && currentType === "DISLIKE") return "دیسلایک شما ثبت شد";
-  if (previousType === "LIKE" && !currentType) return "لایک شما برداشته شد";
-  if (previousType === "DISLIKE" && !currentType) return "دیسلایک شما برداشته شد";
-  if (previousType === "LIKE" && currentType === "DISLIKE") return "واکنش شما از لایک به دیسلایک تغییر کرد";
-  if (previousType === "DISLIKE" && currentType === "LIKE") return "واکنش شما از دیسلایک به لایک تغییر کرد";
-  return "واکنش شما با موفقیت ثبت شد";
+  if (!previousType && currentType === "LIKE") return "reaction.success.liked";
+  if (!previousType && currentType === "DISLIKE")
+    return "reaction.success.disliked";
+  if (previousType === "LIKE" && !currentType)
+    return "reaction.success.likeRemoved";
+  if (previousType === "DISLIKE" && !currentType)
+    return "reaction.success.dislikeRemoved";
+  if (previousType === "LIKE" && currentType === "DISLIKE")
+    return "reaction.success.toggledToDislike";
+  if (previousType === "DISLIKE" && currentType === "LIKE")
+    return "reaction.success.toggledToLike";
+  return "reaction.success.default";
 };
 
 export const reactionService = {
@@ -49,7 +54,7 @@ export const reactionService = {
       });
 
       if (!course) {
-        throw new AppError("دوره مورد نظر یافت نشد", 404);
+        throw new AppError("reaction.errors.courseNotFound", 404);
       }
     }
 
@@ -61,7 +66,7 @@ export const reactionService = {
       });
 
       if (!post) {
-        throw new AppError("پست مورد نظر یافت نشد", 404);
+        throw new AppError("reaction.errors.postNotFound", 404);
       }
     }
 
@@ -73,7 +78,7 @@ export const reactionService = {
       });
 
       if (!comment) {
-        throw new AppError("کامنت مورد نظر یافت نشد", 404);
+        throw new AppError("reaction.errors.commentNotFound", 404);
       }
     }
 
@@ -103,8 +108,8 @@ export const reactionService = {
     }
 
     const reactions = await getReactionCounts(field, targetId);
-    const message = getMessage(existing?.type ?? null, myReaction);
+    const messageKey = getMessageKey(existing?.type ?? null, myReaction);
 
-    return { message, myReaction, reactions };
+    return { message: messageKey, myReaction, reactions };
   },
 };

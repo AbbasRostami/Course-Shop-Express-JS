@@ -47,11 +47,11 @@ export const favoriteService = {
         published: true,
         category: { show: true },
       },
-      select: { id: true, title: true },
+      select: { id: true },
     });
 
     if (!course) {
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("favorite.errors.courseNotFound", 404);
     }
 
     const existing = await prisma.courseFavorite.findUnique({
@@ -65,7 +65,7 @@ export const favoriteService = {
       });
 
       return {
-        message: "دوره از علاقه‌مندی‌ها حذف شد",
+        message: "favorite.success.courseRemoved",
         isFavorite: false,
       };
     }
@@ -76,7 +76,7 @@ export const favoriteService = {
     });
 
     return {
-      message: "دوره به علاقه‌مندی‌ها اضافه شد",
+      message: "favorite.success.courseAdded",
       isFavorite: true,
     };
   },
@@ -110,11 +110,11 @@ export const favoriteService = {
         published: true,
         category: { show: true },
       },
-      select: { id: true, title: true },
+      select: { id: true },
     });
 
     if (!post) {
-      throw new AppError("پست مورد نظر یافت نشد", 404);
+      throw new AppError("favorite.errors.postNotFound", 404);
     }
 
     const existing = await prisma.blogFavorite.findUnique({
@@ -128,7 +128,7 @@ export const favoriteService = {
       });
 
       return {
-        message: "پست از علاقه‌مندی‌ها حذف شد",
+        message: "favorite.success.postRemoved",
         isFavorite: false,
       };
     }
@@ -139,7 +139,7 @@ export const favoriteService = {
     });
 
     return {
-      message: "پست به علاقه‌مندی‌ها اضافه شد",
+      message: "favorite.success.postAdded",
       isFavorite: true,
     };
   },

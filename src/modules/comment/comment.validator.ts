@@ -5,13 +5,19 @@ export const createCommentSchema = z.object({
   body: z
     .object({
       content: z
-        .string({ error: "محتوای کامنت الزامی است" })
-        .min(2, "کامنت باید حداقل ۲ کاراکتر باشد")
-        .max(1000, "کامنت نباید بیشتر از ۱۰۰۰ کاراکتر باشد")
+        .string({ error: "comment.validation.contentRequired" })
+        .min(2, "comment.validation.contentMin")
+        .max(1000, "comment.validation.contentMax")
         .trim(),
-      courseId: z.string().uuid("شناسه دوره نامعتبر است").optional(),
-      postId: z.string().uuid("شناسه پست نامعتبر است").optional(),
-      parentId: z.string().uuid("شناسه کامنت parent نامعتبر است").optional(),
+      courseId: z
+        .string()
+        .uuid("comment.validation.courseIdInvalid")
+        .optional(),
+      postId: z.string().uuid("comment.validation.postIdInvalid").optional(),
+      parentId: z
+        .string()
+        .uuid("comment.validation.parentIdInvalid")
+        .optional(),
     })
     .superRefine((data, ctx) => {
       const hasCourseId = !!data.courseId;
@@ -22,7 +28,7 @@ export const createCommentSchema = z.object({
         ctx.addIssue({
           code: "custom",
           path: ["courseId"],
-          message: "ارسال یکی از courseId یا postId الزامی است",
+          message: "comment.validation.eitherCourseOrPost",
         });
       }
 
@@ -30,13 +36,13 @@ export const createCommentSchema = z.object({
         ctx.addIssue({
           code: "custom",
           path: ["courseId"],
-          message: "فقط یکی از courseId یا postId مجاز است",
+          message: "comment.validation.onlyOneAllowed",
         });
 
         ctx.addIssue({
           code: "custom",
           path: ["postId"],
-          message: "فقط یکی از courseId یا postId مجاز است",
+          message: "comment.validation.onlyOneAllowed",
         });
       }
     }),
@@ -45,7 +51,7 @@ export const createCommentSchema = z.object({
 // [VALID] Delete comment schema
 export const deleteCommentSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("comment.validation.idInvalid"),
   }),
 });
 
@@ -53,21 +59,27 @@ export const deleteCommentSchema = z.object({
 export const listCourseCommentsSchema = z.object({
   params: z.object({
     slug: z
-      .string({ error: "slug الزامی است" })
-      .min(1, "slug نامعتبر است")
+      .string({ error: "comment.validation.slugRequired" })
+      .min(1, "comment.validation.slugInvalid")
       .max(200),
   }),
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z.string().regex(/^\d+$/, "comment.validation.pageNumber").optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "comment.validation.limitNumber")
+      .optional(),
   }),
 });
 
 // [VALID] List my comments schema
 export const listMyCommentsSchema = z.object({
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z.string().regex(/^\d+$/, "comment.validation.pageNumber").optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "comment.validation.limitNumber")
+      .optional(),
     status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
   }),
 });
@@ -75,17 +87,24 @@ export const listMyCommentsSchema = z.object({
 // [VALID] Admin list comments schema
 export const listAdminCommentsSchema = z.object({
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z.string().regex(/^\d+$/, "comment.validation.pageNumber").optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "comment.validation.limitNumber")
+      .optional(),
     status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
-    search: z.string().trim().max(100, "search حداکثر ۱۰۰ کاراکتر").optional(),
+    search: z
+      .string()
+      .trim()
+      .max(100, "comment.validation.searchMax")
+      .optional(),
   }),
 });
 
 // [VALID] Moderate comment schema
 export const moderateCommentSchema = z.object({
   params: z.object({
-    id: z.string().uuid("شناسه نامعتبر است"),
+    id: z.string().uuid("comment.validation.idInvalid"),
   }),
 });
 
@@ -93,18 +112,27 @@ export const moderateCommentSchema = z.object({
 export const listPostCommentsSchema = z.object({
   params: z.object({
     slug: z
-      .string({ error: "slug الزامی است" })
-      .min(1, "slug نامعتبر است")
+      .string({ error: "comment.validation.slugRequired" })
+      .min(1, "comment.validation.slugInvalid")
       .max(200),
   }),
   query: z.object({
-    page: z.string().regex(/^\d+$/, "page باید عدد باشد").optional(),
-    limit: z.string().regex(/^\d+$/, "limit باید عدد باشد").optional(),
+    page: z.string().regex(/^\d+$/, "comment.validation.pageNumber").optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "comment.validation.limitNumber")
+      .optional(),
   }),
 });
 
-export type ListPostCommentsQuery = z.infer<typeof listPostCommentsSchema>["query"];
+export type ListPostCommentsQuery = z.infer<
+  typeof listPostCommentsSchema
+>["query"];
 export type CreateCommentInput = z.infer<typeof createCommentSchema>["body"];
-export type ListCourseCommentsQuery = z.infer<typeof listCourseCommentsSchema>["query"];
+export type ListCourseCommentsQuery = z.infer<
+  typeof listCourseCommentsSchema
+>["query"];
 export type ListMyCommentsQuery = z.infer<typeof listMyCommentsSchema>["query"];
-export type ListAdminCommentsQuery = z.infer<typeof listAdminCommentsSchema>["query"];
+export type ListAdminCommentsQuery = z.infer<
+  typeof listAdminCommentsSchema
+>["query"];

@@ -1,13 +1,15 @@
 import { Prisma } from "../../../generated/prisma/client.js";
 
-// [DB] Order detail include - full item info
+// [DB] Order detail include - full item info (bilingual)
 export const orderDetailInclude = {
   items: {
     select: {
       id: true,
       courseId: true,
-      courseTitle: true,
-      courseSlug: true,
+      courseTitleFa: true,
+      courseTitleEn: true,
+      courseSlugFa: true,
+      courseSlugEn: true,
       courseImageUrl: true,
       price: true,
       createdAt: true,
@@ -15,18 +17,19 @@ export const orderDetailInclude = {
   },
 } satisfies Prisma.OrderInclude;
 
-// [DB] Order list include - minimal item info
+// [DB] Order list include - minimal item info (bilingual)
 export const orderListInclude = {
   items: {
     select: {
       id: true,
-      courseTitle: true,
+      courseTitleFa: true,
+      courseTitleEn: true,
       price: true,
     },
   },
 } satisfies Prisma.OrderInclude;
 
-// [DB] Admin order include - with user info
+// [DB] Admin order include - with user info (bilingual)
 export const orderAdminInclude = {
   user: {
     select: {
@@ -39,8 +42,10 @@ export const orderAdminInclude = {
     select: {
       id: true,
       courseId: true,
-      courseTitle: true,
-      courseSlug: true,
+      courseTitleFa: true,
+      courseTitleEn: true,
+      courseSlugFa: true,
+      courseSlugEn: true,
       courseImageUrl: true,
       price: true,
       createdAt: true,

@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { localizePayload } from "../../utils/localize.js";
 import { maskFields, maskItem } from "../../utils/mask.js";
 import { orderService } from "./order.service.js";
 import { ListAdminOrdersQuery, ListOrdersQuery } from "./order.validator.js";
@@ -10,13 +11,13 @@ const FRONTEND_URL = process.env.FRONTEND_URL!;
 export const checkoutWalletController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
-  const result = await orderService.checkoutWithWallet(userId);
+  const result = await orderService.checkoutWithWallet(userId, req.locale);
 
   return res.status(200).json({
     status: "success",
     data: {
-      message: "پرداخت با موفقیت انجام شد",
-      order: result.order,
+      message: req.t("order.success.paid"),
+      order: localizePayload(result.order, req.locale),
       newBalance: result.newBalance,
     },
   });
@@ -26,7 +27,7 @@ export const checkoutWalletController: RequestHandler = async (req, res) => {
 export const checkoutZarinpalController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
 
-  const result = await orderService.checkoutWithZarinpal(userId);
+  const result = await orderService.checkoutWithZarinpal(userId, req.locale);
 
   return res.status(200).json({
     status: "success",
@@ -34,7 +35,7 @@ export const checkoutZarinpalController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Verify ZarinPal callback and redirect
+// [GET] Verify ZarinPal callback and redirect (translates failure reasons)
 export const verifyOrderController: RequestHandler = async (req, res) => {
   const authority = req.query.Authority as string;
   const status = req.query.Status as string;
@@ -47,7 +48,11 @@ export const verifyOrderController: RequestHandler = async (req, res) => {
     );
   }
 
-  const reason = encodeURIComponent(result.reason || "پرداخت ناموفق بود");
+  const localizedReason = req.t(
+    (result.reason || "order.errors.paymentFailed") as any,
+  );
+  const reason = encodeURIComponent(localizedReason);
+
   return res.redirect(
     `${FRONTEND_URL}/orders/failed?orderId=${result.orderId}&reason=${reason}`,
   );
@@ -64,7 +69,10 @@ export const getMyOrdersController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -77,7 +85,9 @@ export const getOrderController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { order },
+    data: {
+      order: localizePayload(order, req.locale),
+    },
   });
 };
 
@@ -91,8 +101,8 @@ export const cancelOrderController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: "سفارش با موفقیت لغو شد",
-      order,
+      message: req.t("order.success.cancelled"),
+      order: localizePayload(order, req.locale),
     },
   });
 };
@@ -106,8 +116,8 @@ export const adminCancelOrderController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: "سفارش توسط ادمین لغو شد",
-      order,
+      message: req.t("order.success.adminCancelled"),
+      order: localizePayload(order, req.locale),
     },
   });
 };
@@ -124,8 +134,8 @@ export const getAdminOrdersController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      ...result,
-      items: maskedItems,
+      items: localizePayload(maskedItems, req.locale),
+      pagination: result.pagination,
     },
   });
 };
@@ -140,6 +150,8 @@ export const getAdminOrderController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { order: maskedOrder },
+    data: {
+      order: localizePayload(maskedOrder, req.locale),
+    },
   });
 };

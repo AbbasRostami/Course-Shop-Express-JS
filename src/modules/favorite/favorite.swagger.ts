@@ -17,12 +17,12 @@ export const favoriteSwagger = {
         ],
         responses: {
           200: {
-            description: "Fetching successfully.",
+            description: "Operation completed successfully.",
             content: {
               "application/json": {
                 examples: {
                   saved: {
-                    summary: "دوره ذخیره شد",
+                    summary: "Course saved to favorites",
                     value: {
                       status: "success",
                       data: {
@@ -32,7 +32,7 @@ export const favoriteSwagger = {
                     },
                   },
                   removed: {
-                    summary: "دوره حذف شد",
+                    summary: "Course removed from favorites",
                     value: {
                       status: "success",
                       data: {
@@ -55,19 +55,17 @@ export const favoriteSwagger = {
       get: {
         tags: ["Favorite"],
         summary: "Get my favorite courses",
-        description: "Returns list of courses saved by the authenticated user.",
+        description:
+          "Returns list of courses saved by the authenticated user. **Text fields are localized based on `Accept-Language` header.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
-            name: "page",
-            in: "query",
-            schema: { type: "string", example: "1" },
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          {
-            name: "limit",
-            in: "query",
-            schema: { type: "string", example: "10" },
-          },
+          { name: "page", in: "query", schema: { type: "string", example: "1" } },
+          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
         ],
         responses: {
           200: {
@@ -94,18 +92,11 @@ export const favoriteSwagger = {
                             name: "فرانت‌اند",
                             slug: "frontend",
                           },
-                          stats: {
-                            enrollments: 25,
-                            comments: 12,
-                          },
+                          stats: { enrollments: 25, comments: 12 },
                         },
                       },
                     ],
-                    pagination: {
-                      page: 1,
-                      limit: 10,
-                      total: 3,
-                    },
+                    pagination: { page: 1, limit: 10, total: 3 },
                   },
                 },
               },
@@ -132,12 +123,12 @@ export const favoriteSwagger = {
         ],
         responses: {
           200: {
-            description: "Fetching Successfully.",
+            description: "Operation completed successfully.",
             content: {
               "application/json": {
                 examples: {
                   saved: {
-                    summary: "پست ذخیره شد",
+                    summary: "Post saved to favorites",
                     value: {
                       status: "success",
                       data: {
@@ -147,7 +138,7 @@ export const favoriteSwagger = {
                     },
                   },
                   removed: {
-                    summary: "پست حذف شد",
+                    summary: "Post removed from favorites",
                     value: {
                       status: "success",
                       data: {
@@ -171,19 +162,16 @@ export const favoriteSwagger = {
         tags: ["Favorite"],
         summary: "Get my favorite posts",
         description:
-          "Returns list of blog posts saved by the authenticated user.",
+          "Returns list of blog posts saved by the authenticated user. **Text fields are localized.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
-            name: "page",
-            in: "query",
-            schema: { type: "string", example: "1" },
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          {
-            name: "limit",
-            in: "query",
-            schema: { type: "string", example: "10" },
-          },
+          { name: "page", in: "query", schema: { type: "string", example: "1" } },
+          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
         ],
         responses: {
           200: {
@@ -208,17 +196,11 @@ export const favoriteSwagger = {
                             name: "فرانت‌اند",
                             slug: "frontend",
                           },
-                          stats: {
-                            comments: 8,
-                          },
+                          stats: { comments: 8 },
                         },
                       },
                     ],
-                    pagination: {
-                      page: 1,
-                      limit: 10,
-                      total: 2,
-                    },
+                    pagination: { page: 1, limit: 10, total: 2 },
                   },
                 },
               },

@@ -1,9 +1,13 @@
 import { RequestHandler } from "express";
+import { localizePayload } from "../../utils/localize.js";
 import { favoriteService } from "./favorite.service.js";
 import { ListFavoritesQuery } from "./favorite.validator.js";
 
 // [POST] Toggle course favorite
-export const toggleCourseFavoriteController: RequestHandler = async (req, res) => {
+export const toggleCourseFavoriteController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
   const courseId = req.params.courseId as string;
 
@@ -11,12 +15,18 @@ export const toggleCourseFavoriteController: RequestHandler = async (req, res) =
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      isFavorite: result.isFavorite,
+    },
   });
 };
 
 // [GET] Get my course favorites
-export const getMyCourseFavoritesController: RequestHandler = async (req, res) => {
+export const getMyCourseFavoritesController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
 
   const result = await favoriteService.getMyCourseFavorites(
@@ -26,12 +36,18 @@ export const getMyCourseFavoritesController: RequestHandler = async (req, res) =
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
 // [POST] Toggle post favorite
-export const togglePostFavoriteController: RequestHandler = async (req, res) => {
+export const togglePostFavoriteController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
   const postId = req.params.postId as string;
 
@@ -39,12 +55,18 @@ export const togglePostFavoriteController: RequestHandler = async (req, res) => 
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      isFavorite: result.isFavorite,
+    },
   });
 };
 
 // [GET] Get my post favorites
-export const getMyPostFavoritesController: RequestHandler = async (req, res) => {
+export const getMyPostFavoritesController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
 
   const result = await favoriteService.getMyPostFavorites(
@@ -54,6 +76,9 @@ export const getMyPostFavoritesController: RequestHandler = async (req, res) => 
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };

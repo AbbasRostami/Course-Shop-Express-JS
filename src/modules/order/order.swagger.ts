@@ -5,8 +5,15 @@ export const orderSwagger = {
         tags: ["Order"],
         summary: "Checkout with wallet",
         description:
-          "Creates an order from the user's cart and pays using wallet balance. On success: order is PAID, enrollments are created, cart is cleared.",
+          "Creates an order from the user's cart and pays using wallet balance. On success: order is PAID, enrollments are created, cart is cleared. **Course titles in OrderItem are stored as a bilingual Snapshot.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+        ],
         responses: {
           200: {
             description: "Payment completed successfully.",
@@ -22,7 +29,6 @@ export const orderSwagger = {
                       status: "PAID",
                       paymentMethod: "WALLET",
                       createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:00:05.000Z",
                       items: [
                         {
                           id: "item-uuid-1",
@@ -31,15 +37,6 @@ export const orderSwagger = {
                           courseSlug: "react-advanced",
                           courseImageUrl: "/uploads/courses/react.jpg",
                           price: 500000,
-                          createdAt: "2026-01-15T14:00:00.000Z",
-                        },
-                        {
-                          id: "item-uuid-2",
-                          courseId: "course-uuid-2",
-                          courseTitle: "آموزش Node.js",
-                          courseSlug: "node-advanced",
-                          courseImageUrl: "/uploads/courses/node.jpg",
-                          price: 300000,
                           createdAt: "2026-01-15T14:00:00.000Z",
                         },
                       ],
@@ -52,12 +49,11 @@ export const orderSwagger = {
           },
           400: {
             description:
-              "Cart is empty, insufficient balance, or course is unavailable.",
+              "Cart empty, insufficient balance, or course unavailable.",
             content: {
               "application/json": {
                 examples: {
                   emptyCart: {
-                    summary: "سبد خالی",
                     value: {
                       status: "error",
                       message: "سبد خرید خالی است",
@@ -65,7 +61,6 @@ export const orderSwagger = {
                     },
                   },
                   insufficientBalance: {
-                    summary: "موجودی ناکافی",
                     value: {
                       status: "error",
                       message:
@@ -73,17 +68,7 @@ export const orderSwagger = {
                       code: 400,
                     },
                   },
-                  alreadyEnrolled: {
-                    summary: "قبلاً خریداری شده",
-                    value: {
-                      status: "error",
-                      message:
-                        'شما قبلاً دوره "آموزش React پیشرفته" را خریداری کرده‌اید',
-                      code: 400,
-                    },
-                  },
                   courseUnavailable: {
-                    summary: "دوره غیرفعال",
                     value: {
                       status: "error",
                       message: 'دوره "آموزش React پیشرفته" دیگر در دسترس نیست',
@@ -96,7 +81,7 @@ export const orderSwagger = {
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           404: {
-            description: "Wallet not found. User must have a wallet to pay.",
+            description: "Wallet not found.",
             content: {
               "application/json": {
                 example: {
@@ -115,11 +100,19 @@ export const orderSwagger = {
       post: {
         tags: ["Order"],
         summary: "Checkout with ZarinPal",
-        description: `Creates an order from the user's cart and initiates ZarinPal payment.`,
+        description:
+          "Creates an order from the user's cart and initiates ZarinPal payment. **The payment description is localized based on `Accept-Language` header.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+        ],
         responses: {
           200: {
-            description: "لینک پرداخت زرین‌پال.",
+            description: "ZarinPal payment link.",
             content: {
               "application/json": {
                 example: {
@@ -134,24 +127,14 @@ export const orderSwagger = {
             },
           },
           400: {
-            description: "سبد خالی، دوره نامعتبر، یا قبلاً خریداری شده.",
+            description: "Cart empty, invalid course, or already purchased.",
             content: {
               "application/json": {
                 examples: {
                   emptyCart: {
-                    summary: "سبد خالی",
                     value: {
                       status: "error",
                       message: "سبد خرید خالی است",
-                      code: 400,
-                    },
-                  },
-                  alreadyEnrolled: {
-                    summary: "قبلاً خریداری شده",
-                    value: {
-                      status: "error",
-                      message:
-                        'شما قبلاً دوره "آموزش ری اکت پیشرفته" را خریداری کرده‌اید',
                       code: 400,
                     },
                   },
@@ -161,7 +144,7 @@ export const orderSwagger = {
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           500: {
-            description: "خطا در ارتباط با درگاه زرین‌پال.",
+            description: "Error connecting to ZarinPal.",
             content: {
               "application/json": {
                 example: {
@@ -181,9 +164,14 @@ export const orderSwagger = {
         tags: ["Order"],
         summary: "Get user's order history",
         description:
-          "Returns list of all orders for the authenticated user with optional status filter and pagination.",
+          "Returns list of all orders. **Course titles in items are localized based on `Accept-Language` header.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "page",
             in: "query",
@@ -201,12 +189,11 @@ export const orderSwagger = {
               type: "string",
               enum: ["PENDING", "PAID", "CANCELLED"],
             },
-            description: "Filter by Status",
           },
         ],
         responses: {
           200: {
-            description: "List of Orders.",
+            description: "List of orders.",
             content: {
               "application/json": {
                 example: {
@@ -219,7 +206,6 @@ export const orderSwagger = {
                         status: "PAID",
                         paymentMethod: "WALLET",
                         createdAt: "2026-01-15T14:00:00.000Z",
-                        updatedAt: "2026-01-15T14:00:05.000Z",
                         items: [
                           {
                             id: "item-uuid",
@@ -245,19 +231,16 @@ export const orderSwagger = {
         tags: ["Order"],
         summary: "Get all orders (Admin)",
         description:
-          "Returns all orders with optional filters. Supports search by user name or email.",
+          "Returns all orders with optional filters. Search works on user's name/email.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
-            name: "page",
-            in: "query",
-            schema: { type: "string" },
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          {
-            name: "limit",
-            in: "query",
-            schema: { type: "string" },
-          },
+          { name: "page", in: "query", schema: { type: "string" } },
+          { name: "limit", in: "query", schema: { type: "string" } },
           {
             name: "status",
             in: "query",
@@ -265,18 +248,16 @@ export const orderSwagger = {
               type: "string",
               enum: ["PENDING", "PAID", "CANCELLED"],
             },
-            description: "Filter by Status",
           },
           {
             name: "search",
             in: "query",
             schema: { type: "string", maxLength: 100 },
-            description: "Search by user name or email",
           },
         ],
         responses: {
           200: {
-            description: "List of Orders for admin.",
+            description: "List of all orders for admin.",
             content: {
               "application/json": {
                 example: {
@@ -291,7 +272,7 @@ export const orderSwagger = {
                         createdAt: "2026-01-15T14:00:00.000Z",
                         user: {
                           id: "user-uuid",
-                          email: "ali@example.com",
+                          email: "al***@example.com",
                           name: "Ali",
                         },
                         items: [
@@ -319,10 +300,14 @@ export const orderSwagger = {
       get: {
         tags: ["Order"],
         summary: "Get order details (Admin)",
-        description:
-          "Returns full details of any order. Admin access required.",
+        description: "Returns full details of any order.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "id",
             in: "path",
@@ -332,7 +317,7 @@ export const orderSwagger = {
         ],
         responses: {
           200: {
-            description: "Details of Order.",
+            description: "Details of the order.",
             content: {
               "application/json": {
                 example: {
@@ -344,10 +329,9 @@ export const orderSwagger = {
                       status: "PAID",
                       paymentMethod: "WALLET",
                       createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:00:05.000Z",
                       user: {
                         id: "user-uuid",
-                        email: "ali@example.com",
+                        email: "al***@example.com",
                         name: "Ali",
                       },
                       items: [
@@ -383,6 +367,11 @@ export const orderSwagger = {
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+          {
             name: "id",
             in: "path",
             required: true,
@@ -391,7 +380,7 @@ export const orderSwagger = {
         ],
         responses: {
           200: {
-            description: "Details of Order.",
+            description: "Details of the order.",
             content: {
               "application/json": {
                 example: {
@@ -403,7 +392,6 @@ export const orderSwagger = {
                       status: "PAID",
                       paymentMethod: "WALLET",
                       createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:00:05.000Z",
                       items: [
                         {
                           id: "item-uuid",
@@ -452,25 +440,6 @@ export const orderSwagger = {
                   status: "success",
                   data: {
                     message: "سفارش با موفقیت لغو شد",
-                    order: {
-                      id: "order-uuid",
-                      totalAmount: 800000,
-                      status: "CANCELLED",
-                      paymentMethod: null,
-                      createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:10:00.000Z",
-                      items: [
-                        {
-                          id: "item-uuid",
-                          courseId: "course-uuid",
-                          courseTitle: "آموزش React پیشرفته",
-                          courseSlug: "react-advanced",
-                          courseImageUrl: "/uploads/courses/react.jpg",
-                          price: 500000,
-                          createdAt: "2026-01-15T14:00:00.000Z",
-                        },
-                      ],
-                    },
                   },
                 },
               },
@@ -500,9 +469,7 @@ export const orderSwagger = {
         tags: ["Order"],
         summary: "Cancel a pending order (Admin)",
         description:
-          "Admin can cancel any PENDING order. " +
-          "Cannot cancel PAID orders (requires refund functionality). " +
-          "Cannot cancel already CANCELLED orders.",
+          "Admin can cancel any PENDING order. Cannot cancel PAID orders (requires refund).",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
@@ -519,33 +486,7 @@ export const orderSwagger = {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "سفارش توسط ادمین لغو شد",
-                    order: {
-                      id: "order-uuid",
-                      totalAmount: 800000,
-                      status: "CANCELLED",
-                      paymentMethod: null,
-                      createdAt: "2026-01-15T14:00:00.000Z",
-                      updatedAt: "2026-01-15T14:10:00.000Z",
-                      user: {
-                        id: "user-uuid",
-                        email: "ali@example.com",
-                        name: "Ali",
-                      },
-                      items: [
-                        {
-                          id: "item-uuid",
-                          courseId: "course-uuid",
-                          courseTitle: "آموزش React پیشرفته",
-                          courseSlug: "react-advanced",
-                          courseImageUrl: "/uploads/courses/react.jpg",
-                          price: 500000,
-                          createdAt: "2026-01-15T14:00:00.000Z",
-                        },
-                      ],
-                    },
-                  },
+                  data: { message: "سفارش توسط ادمین لغو شد" },
                 },
               },
             },
@@ -556,7 +497,6 @@ export const orderSwagger = {
               "application/json": {
                 examples: {
                   alreadyCancelled: {
-                    summary: "قبلاً لغو شده",
                     value: {
                       status: "error",
                       message: "این سفارش قبلاً لغو شده است",
@@ -564,11 +504,9 @@ export const orderSwagger = {
                     },
                   },
                   alreadyPaid: {
-                    summary: "پرداخت شده",
                     value: {
                       status: "error",
-                      message:
-                        "امکان لغو سفارش پرداخت شده وجود ندارد. برای این کار نیاز به بازپرداخت (Refund) دارید",
+                      message: "امکان لغو سفارش پرداخت شده وجود ندارد.",
                       code: 400,
                     },
                   },

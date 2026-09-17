@@ -16,19 +16,19 @@ export const validateDiscount = async (code: string) => {
   const discount = await prisma.discount.findUnique({ where: { code } });
 
   if (!discount) {
-    throw new AppError("کد تخفیف یافت نشد", 404);
+    throw new AppError("discount.errors.notFound", 404);
   }
 
   if (!discount.active) {
-    throw new AppError("این کد تخفیف غیرفعال است", 400);
+    throw new AppError("discount.errors.inactive", 400);
   }
 
   if (discount.expiresAt < new Date()) {
-    throw new AppError("این کد تخفیف منقضی شده است", 410);
+    throw new AppError("discount.errors.expired", 410);
   }
 
   if (discount.usedCount >= discount.maxUses) {
-    throw new AppError("ظرفیت استفاده از این کد تمام شده است", 400);
+    throw new AppError("discount.errors.limitReached", 400);
   }
 
   return discount;
@@ -53,8 +53,8 @@ export const discountService = {
     });
 
     if (existing) {
-      throw new AppError("کدی با این نام قبلاً ثبت شده است", 409, {
-        code: "این کد قبلاً استفاده شده است",
+      throw new AppError("discount.errors.codeExists", 409, {
+        code: "discount.errors.codeExists",
       });
     }
 
@@ -109,23 +109,17 @@ export const discountService = {
     const discount = await prisma.discount.findUnique({ where: { id } });
 
     if (!discount) {
-      throw new AppError("کد تخفیف یافت نشد", 404);
+      throw new AppError("discount.errors.notFound", 404);
     }
 
     // [LOGIC] Block reactivation of expired discount
     if (!discount.active && discount.expiresAt < new Date()) {
-      throw new AppError(
-        "نمی‌توان کد منقضی شده را فعال کرد. ابتدا کد جدید بسازید",
-        410,
-      );
+      throw new AppError("discount.errors.cannotActivateExpired", 410);
     }
 
     // [LOGIC] Block reactivation if usage limit reached
     if (!discount.active && discount.usedCount >= discount.maxUses) {
-      throw new AppError(
-        "نمی‌توان کد را فعال کرد، ظرفیت استفاده تمام شده است",
-        400,
-      );
+      throw new AppError("discount.errors.cannotActivateLimitReached", 400);
     }
 
     return prisma.discount.update({
@@ -139,7 +133,7 @@ export const discountService = {
     const discount = await prisma.discount.findUnique({ where: { id } });
 
     if (!discount) {
-      throw new AppError("کد تخفیف یافت نشد", 404);
+      throw new AppError("discount.errors.notFound", 404);
     }
 
     await prisma.discount.delete({ where: { id } });
@@ -155,7 +149,7 @@ export const discountService = {
     });
 
     if (!cart || cart.items.length === 0) {
-      throw new AppError("سبد خرید شما خالی است", 400);
+      throw new AppError("discount.errors.cartEmpty", 400);
     }
 
     await prisma.cart.update({
@@ -164,7 +158,7 @@ export const discountService = {
     });
 
     return {
-      message: "کد تخفیف با موفقیت اعمال شد",
+      message: "discount.success.applied",
       discount: {
         code: discount.code,
         type: discount.type,
@@ -178,11 +172,11 @@ export const discountService = {
     const cart = await prisma.cart.findUnique({ where: { userId } });
 
     if (!cart) {
-      throw new AppError("سبد خرید یافت نشد", 404);
+      throw new AppError("discount.errors.cartNotFound", 404);
     }
 
     if (!cart.discountCode) {
-      throw new AppError("کد تخفیفی در سبد شما نیست", 400);
+      throw new AppError("discount.errors.noDiscountInCart", 400);
     }
 
     await prisma.cart.update({
@@ -190,6 +184,6 @@ export const discountService = {
       data: { discountCode: null },
     });
 
-    return { message: "کد تخفیف از سبد حذف شد" };
+    return { message: "discount.success.removed" };
   },
 };

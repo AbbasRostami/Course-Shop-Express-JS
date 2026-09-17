@@ -17,30 +17,75 @@ import {
 const router = Router();
 
 // [GET] Full admin overview
-router.get("/admin", authentication, authorize("ADMIN"), asyncHandler(getAdminOverviewController));
+router.get(
+  "/admin",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminOverviewController),
+);
 
 // [GET] User stats
-router.get("/admin/users", authentication, authorize("ADMIN"), asyncHandler(getAdminUserStatsController));
+router.get(
+  "/admin/users",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminUserStatsController),
+);
 
 // [GET] Course stats
-router.get("/admin/courses", authentication, authorize("ADMIN"), asyncHandler(getAdminCourseStatsController));
+router.get(
+  "/admin/courses",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminCourseStatsController),
+);
 
 // [GET] Order stats
-router.get("/admin/orders", authentication, authorize("ADMIN"), asyncHandler(getAdminOrderStatsController));
+router.get(
+  "/admin/orders",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminOrderStatsController),
+);
 
 // [GET] Revenue stats
-router.get("/admin/revenue", authentication, authorize("ADMIN"), asyncHandler(getAdminRevenueStatsController));
+router.get(
+  "/admin/revenue",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminRevenueStatsController),
+);
 
 // [GET] Discount stats
-router.get("/admin/discounts", authentication, authorize("ADMIN"), asyncHandler(getAdminDiscountStatsController));
+router.get(
+  "/admin/discounts",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminDiscountStatsController),
+);
 
 // [GET] Comment stats
-router.get("/admin/comments", authentication, authorize("ADMIN"), asyncHandler(getAdminCommentStatsController));
+router.get(
+  "/admin/comments",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminCommentStatsController),
+);
 
 // [GET] Post stats
-router.get("/admin/posts", authentication, authorize("ADMIN"), asyncHandler(getAdminPostStatsController));
+router.get(
+  "/admin/posts",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminPostStatsController),
+);
 
 // [GET] Enrollment stats
-router.get("/admin/enrollments", authentication, authorize("ADMIN"), asyncHandler(getAdminEnrollmentStatsController));
+router.get(
+  "/admin/enrollments",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminEnrollmentStatsController),
+);
 
 export default router;

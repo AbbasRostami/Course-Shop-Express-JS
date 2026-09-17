@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { localizePayload } from "../../utils/localize.js";
 import { maskFields } from "../../utils/mask.js";
 import { walletService } from "./wallet.service.js";
 import {
@@ -24,12 +25,12 @@ export const getWalletBalanceController: RequestHandler = async (req, res) => {
 // [POST] Charge wallet - returns ZarinPal payment URL
 export const chargeWalletController: RequestHandler = async (req, res) => {
   const userId = req.user!.id;
-  const result = await walletService.chargeWallet(userId, req.body);
+  const result = await walletService.chargeWallet(userId, req.body, req.locale);
 
   return res.status(200).json({
     status: "success",
     data: {
-      message: "لطفاً برای پرداخت به آدرس زیر مراجعه کنید",
+      message: req.t("wallet.success.chargeInitiated"),
       paymentUrl: result.paymentUrl,
       transactionId: result.transaction.id,
       authority: result.authority,
@@ -37,13 +38,15 @@ export const chargeWalletController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Verify ZarinPal callback and redirect
+// [GET] Verify ZarinPal callback and redirect (translates error reasons)
 export const verifyPaymentController: RequestHandler = async (req, res) => {
   const Authority = req.query.Authority as string;
   const Status = req.query.Status as string;
 
   if (!Authority || !Status) {
-    return res.redirect(`${FRONTEND_URL}/payment/failed?reason=invalid_callback`);
+    return res.redirect(
+      `${FRONTEND_URL}/payment/failed?reason=wallet.errors.transactionNotFound`,
+    );
   }
 
   const result = await walletService.verifyPayment(Authority, Status);
@@ -62,15 +65,18 @@ export const verifyPaymentController: RequestHandler = async (req, res) => {
 
   const params = new URLSearchParams({
     status: "failed",
-    reason: result.reason || "خطا در پرداخت",
+    reason: req.t((result.reason || "wallet.errors.paymentFailed") as any),
     authority: Authority || "",
   });
 
   return res.redirect(`${FRONTEND_URL}/payment/failed?${params.toString()}`);
 };
 
-// [GET] Get user transactions list
-export const getUserTransactionsController: RequestHandler = async (req, res) => {
+// [GET] Get user transactions list with localized course relation
+export const getUserTransactionsController: RequestHandler = async (
+  req,
+  res,
+) => {
   const userId = req.user!.id;
 
   const result = await walletService.getUserTransactions(
@@ -80,13 +86,18 @@ export const getUserTransactionsController: RequestHandler = async (req, res) =>
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
 // [GET] Admin list all wallets with masked fields
 export const getAllWalletsController: RequestHandler = async (req, res) => {
-  const result = await walletService.getAllWallets(req.query as ListWalletsAdminQuery);
+  const result = await walletService.getAllWallets(
+    req.query as ListWalletsAdminQuery,
+  );
 
   // [SECURITY] Mask email and phone in wallet list
   const maskedItems = maskFields(result.items, ["user.email", "user.phone"]);
@@ -97,8 +108,11 @@ export const getAllWalletsController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Admin list all transactions with masked email
-export const getAllTransactionsController: RequestHandler = async (req, res) => {
+// [GET] Admin list all transactions with masked email and localized course relation
+export const getAllTransactionsController: RequestHandler = async (
+  req,
+  res,
+) => {
   const result = await walletService.getAllTransactions(
     req.query as ListAdminTransactionsQuery,
   );
@@ -108,6 +122,9 @@ export const getAllTransactionsController: RequestHandler = async (req, res) => 
 
   return res.status(200).json({
     status: "success",
-    data: { ...result, items: maskedItems },
+    data: {
+      items: localizePayload(maskedItems, req.locale),
+      pagination: result.pagination,
+    },
   });
 };

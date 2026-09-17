@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import { Prisma } from "../../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
@@ -26,11 +27,11 @@ const findUserOrder = async (orderId: string, userId: string) => {
   });
 
   if (!order) {
-    throw new AppError("سفارش یافت نشد", 404);
+    throw new AppError("order.errors.notFound", 404);
   }
 
   if (order.userId !== userId) {
-    throw new AppError("شما اجازه دسترسی به این سفارش را ندارید", 403);
+    throw new AppError("order.errors.unauthorized", 403);
   }
 
   return order;
@@ -41,10 +42,9 @@ const findPendingOrder = async (orderId: string, userId: string) => {
   const order = await findUserOrder(orderId, userId);
 
   if (order.status !== "PENDING") {
-    throw new AppError(
-      `این سفارش قابل پرداخت/لغو نیست (وضعیت: ${order.status})`,
-      400,
-    );
+    throw new AppError("order.errors.cannotProcessStatus", 400, null, {
+      status: order.status,
+    });
   }
 
   return order;
@@ -84,10 +84,11 @@ const clearCartItems = async (userId: string, tx: Prisma.TransactionClient) => {
   }
 };
 
-// [DB] Validate cart and build order from items
+// [DB] Validate cart and build order from items (with bilingual fields support)
 const createOrderFromCart = async (
   userId: string,
   tx: Prisma.TransactionClient,
+  locale: "fa" | "en",
 ) => {
   const cart = await tx.cart.findUnique({
     where: { userId },
@@ -95,13 +96,15 @@ const createOrderFromCart = async (
   });
 
   if (!cart || cart.items.length === 0) {
-    throw new AppError("سبد خرید خالی است", 400);
+    throw new AppError("order.errors.cartEmpty", 400);
   }
 
   const validItems: {
     courseId: string;
-    title: string;
-    slug: string;
+    titleFa: string;
+    titleEn: string;
+    slugFa: string;
+    slugEn: string;
     imageUrl: string | null;
     price: number;
   }[] = [];
@@ -111,15 +114,18 @@ const createOrderFromCart = async (
 
     // [LOGIC] Block unavailable courses
     if (!course.published || !course.category?.show) {
-      throw new AppError(`دوره "${course.title}" دیگر در دسترس نیست`, 400);
+      const title = locale === "en" ? course.titleEn : course.titleFa;
+      throw new AppError("order.errors.courseUnavailable", 400, null, {
+        title,
+      });
     }
 
     // [LOGIC] Block free courses in cart
     if (course.price === 0) {
-      throw new AppError(
-        `دوره رایگان "${course.title}" نباید در سبد خرید باشد`,
-        400,
-      );
+      const title = locale === "en" ? course.titleEn : course.titleFa;
+      throw new AppError("order.errors.courseFreeInCart", 400, null, {
+        title,
+      });
     }
 
     // [DB] Check existing enrollment
@@ -128,16 +134,18 @@ const createOrderFromCart = async (
     });
 
     if (enrolled) {
-      throw new AppError(
-        `شما قبلاً دوره "${course.title}" را خریداری کرده‌اید`,
-        400,
-      );
+      const title = locale === "en" ? course.titleEn : course.titleFa;
+      throw new AppError("order.errors.alreadyEnrolled", 400, null, {
+        title,
+      });
     }
 
     validItems.push({
       courseId: course.id,
-      title: course.title,
-      slug: course.slug,
+      titleFa: course.titleFa,
+      titleEn: course.titleEn,
+      slugFa: course.slugFa,
+      slugEn: course.slugEn,
       imageUrl: course.imageUrl,
       price: course.price,
     });
@@ -173,7 +181,7 @@ const createOrderFromCart = async (
 
   const totalAmount = subtotal - discountAmount;
 
-  // [DB] Create order with items
+  // [DB] Create order with bilingual items Snapshot
   const order = await tx.order.create({
     data: {
       userId,
@@ -185,8 +193,10 @@ const createOrderFromCart = async (
       items: {
         create: validItems.map((item) => ({
           courseId: item.courseId,
-          courseTitle: item.title,
-          courseSlug: item.slug,
+          courseTitleFa: item.titleFa,
+          courseTitleEn: item.titleEn,
+          courseSlugFa: item.slugFa,
+          courseSlugEn: item.slugEn,
           courseImageUrl: item.imageUrl,
           price: item.price,
         })),
@@ -200,25 +210,22 @@ const createOrderFromCart = async (
 
 export const orderService = {
   // [PAYMENT] Checkout with wallet balance
-  async checkoutWithWallet(userId: string) {
+  async checkoutWithWallet(userId: string, locale: "fa" | "en") {
     const result = await prisma.$transaction(async (tx) => {
-      const order = await createOrderFromCart(userId, tx);
+      const order = await createOrderFromCart(userId, tx, locale);
 
       const wallet = await tx.wallet.findUnique({ where: { userId } });
 
       if (!wallet) {
-        throw new AppError(
-          "کیف پول یافت نشد. ابتدا کیف پول خود را شارژ کنید",
-          404,
-        );
+        throw new AppError("order.errors.walletNotFound", 404);
       }
 
       // [LOGIC] Check sufficient balance
       if (wallet.balance < order.totalAmount) {
-        throw new AppError(
-          `موجودی کیف پول کافی نیست. موجودی: ${wallet.balance.toLocaleString()} ریال — مبلغ سفارش: ${order.totalAmount.toLocaleString()} ریال`,
-          400,
-        );
+        throw new AppError("order.errors.insufficientBalance", 400, null, {
+          balance: wallet.balance.toLocaleString(),
+          total: order.totalAmount.toLocaleString(),
+        });
       }
 
       // [DB] Deduct from wallet
@@ -227,13 +234,18 @@ export const orderService = {
         data: { balance: { decrement: order.totalAmount } },
       });
 
+      const txDescription = i18next.t("order.description.walletPayment", {
+        id: order.id.slice(0, 8),
+        lng: locale,
+      });
+
       // [DB] Create wallet transaction record
       await tx.transaction.create({
         data: {
           amount: order.totalAmount,
           type: "PURCHASE",
           status: "SUCCESS",
-          description: `پرداخت سفارش #${order.id.slice(0, 8)}`,
+          description: txDescription,
           userId,
           orderId: order.id,
         },
@@ -256,10 +268,9 @@ export const orderService = {
   },
 
   // [PAYMENT] Checkout with ZarinPal gateway
-  async checkoutWithZarinpal(userId: string) {
-    // [DB] Create pending order
+  async checkoutWithZarinpal(userId: string, locale: "fa" | "en") {
     const order = await prisma.$transaction(async (tx) => {
-      return createOrderFromCart(userId, tx);
+      return createOrderFromCart(userId, tx, locale);
     });
 
     const user = await prisma.user.findUnique({
@@ -269,13 +280,18 @@ export const orderService = {
 
     const backendUrl = process.env.BACKEND_URL;
     if (!backendUrl) {
-      throw new AppError("BACKEND_URL در محیط تعریف نشده است", 500);
+      throw new AppError("order.errors.backendUrlNotDefined", 500);
     }
+
+    const paymentDescription = i18next.t("order.description.zarinpalPayment", {
+      id: order.id.slice(0, 8),
+      lng: locale,
+    });
 
     // [PAYMENT] Request authority from ZarinPal
     const zarinpalResult = await requestPayment({
       amount: order.totalAmount,
-      description: `پرداخت سفارش #${order.id.slice(0, 8)}`,
+      description: paymentDescription,
       callbackUrl: `${backendUrl}/api/orders/verify`,
       email: user?.email,
       mobile: user?.phone || undefined,
@@ -290,7 +306,7 @@ export const orderService = {
       });
 
       throw new AppError(
-        zarinpalResult.error || "خطا در ارتباط با درگاه پرداخت",
+        zarinpalResult.error || "zarinpal.errors.connectionError",
         500,
       );
     }
@@ -302,7 +318,7 @@ export const orderService = {
         type: "PURCHASE",
         status: "PENDING",
         authority: zarinpalResult.authority,
-        description: `پرداخت سفارش #${order.id.slice(0, 8)}`,
+        description: paymentDescription,
         userId,
         orderId: order.id,
       },
@@ -321,7 +337,7 @@ export const orderService = {
     });
 
     if (!transaction) {
-      throw new AppError("تراکنش یافت نشد", 404);
+      throw new AppError("order.errors.notFound", 404);
     }
 
     // [LOGIC] Skip if already processed
@@ -352,7 +368,7 @@ export const orderService = {
       return {
         success: false,
         orderId: transaction.orderId,
-        reason: "پرداخت توسط کاربر لغو شد",
+        reason: "wallet.errors.cancelledByCustomer",
       };
     }
 
@@ -371,7 +387,7 @@ export const orderService = {
       return {
         success: false,
         orderId: transaction.orderId,
-        reason: verifyResult.error || "پرداخت ناموفق بود",
+        reason: verifyResult.error || "order.errors.paymentFailed",
       };
     }
 
@@ -464,19 +480,16 @@ export const orderService = {
     });
 
     if (!order) {
-      throw new AppError("سفارش یافت نشد", 404);
+      throw new AppError("order.errors.notFound", 404);
     }
 
     if (order.status === "CANCELLED") {
-      throw new AppError("این سفارش قبلاً لغو شده است", 400);
+      throw new AppError("order.errors.alreadyCancelled", 400);
     }
 
     // [LOGIC] Block cancellation of paid orders
     if (order.status === "PAID") {
-      throw new AppError(
-        "امکان لغو سفارش پرداخت شده وجود ندارد.",
-        400,
-      );
+      throw new AppError("order.errors.cannotCancelPaid", 400);
     }
 
     const cancelled = await prisma.$transaction(async (tx) => {
@@ -541,7 +554,7 @@ export const orderService = {
     });
 
     if (!order) {
-      throw new AppError("سفارش یافت نشد", 404);
+      throw new AppError("order.errors.notFound", 404);
     }
 
     return order;

@@ -5,7 +5,13 @@ export const courseFavoriteInclude = {
   course: {
     include: {
       category: {
-        select: { id: true, name: true, slug: true },
+        select: {
+          id: true,
+          nameFa: true,
+          nameEn: true,
+          slugFa: true,
+          slugEn: true,
+        },
       },
       _count: {
         select: {
@@ -22,7 +28,13 @@ export const postFavoriteInclude = {
   post: {
     include: {
       category: {
-        select: { id: true, name: true, slug: true },
+        select: {
+          id: true,
+          nameFa: true,
+          nameEn: true,
+          slugFa: true,
+          slugEn: true,
+        },
       },
       _count: {
         select: { comments: true },
