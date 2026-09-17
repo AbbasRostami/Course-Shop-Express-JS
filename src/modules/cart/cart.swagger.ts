@@ -119,6 +119,73 @@ export const cartSwagger = {
       },
     },
 
+    "/api/cart/sync": {
+      post: {
+        tags: ["Cart"],
+        summary: "Sync guest cart with user cart (after login)",
+        description:
+          "Merges the guest cart (stored in browser LocalStorage) with the authenticated user's cart. **Automatically filters out invalid, free, purchased, or duplicate courses.** Returns a full sync report along with the updated localized cart.",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["courseIds"],
+                properties: {
+                  courseIds: {
+                    type: "array",
+                    minItems: 1,
+                    maxItems: 50,
+                    items: { type: "string", format: "uuid" },
+                    example: [
+                      "6de9db62-0cf8-46f7-a74e-cdcb6d6f2a55",
+                      "dfc2a5b9-4170-4282-a0b7-21416b0ff4d1",
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Cart synced successfully.",
+            content: {
+              "application/json": {
+                example: {
+                  status: "success",
+                  data: {
+                    message: "سبد خرید با موفقیت همگام‌سازی شد",
+                    summary: { added: 2, skipped: 0 },
+                    details: {
+                      skippedInvalid: [],
+                      skippedEnrolled: [],
+                      skippedDuplicate: [],
+                    },
+                    cart: cartExample,
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description:
+              "Invalid request - array length constraint rules exceeded (min 1, max 50).",
+          },
+          401: { description: "Unauthorized: Invalid or expired token." },
+        },
+      },
+    },
+
     "/api/cart/items/{courseId}": {
       delete: {
         tags: ["Cart"],

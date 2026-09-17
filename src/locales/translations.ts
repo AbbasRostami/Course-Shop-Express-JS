@@ -499,14 +499,19 @@ export const faTranslations = {
       alreadyPurchased: "شما قبلاً این دوره را خریداری کرده‌اید",
       alreadyInCart: "این دوره از قبل در سبد خرید شما موجود است",
       itemNotFound: "این دوره در سبد خرید شما یافت نشد",
+      emptyCourseIds: "لیست دوره‌ها نمی‌تواند خالی باشد",
+      tooManyCourseIds: "حداکثر ۵۰ دوره در یک درخواست مجاز است",
     },
     success: {
       added: "دوره به سبد خرید اضافه شد",
       removed: "دوره از سبد خرید حذف شد",
       cleared: "سبد خرید با موفقیت خالی شد",
+      synced: "سبد خرید با موفقیت همگام‌سازی شد",
     },
     validation: {
       courseIdInvalid: "شناسه دوره نامعتبر است",
+      courseIdsRequired: "لیست دوره‌ها الزامی است",
+      courseIdsArray: "لیست دوره‌ها باید به صورت آرایه باشد",
     },
   },
   common: {
@@ -1024,14 +1029,19 @@ export const enTranslations: typeof faTranslations = {
       alreadyPurchased: "You have already purchased this course",
       alreadyInCart: "This course is already in your cart",
       itemNotFound: "This course was not found in your cart",
+      emptyCourseIds: "Course list cannot be empty",
+      tooManyCourseIds: "Maximum 50 courses allowed per request",
     },
     success: {
       added: "Course added to cart",
       removed: "Course removed from cart",
       cleared: "Cart cleared successfully",
+      synced: "Cart synced successfully",
     },
     validation: {
       courseIdInvalid: "Invalid course ID",
+      courseIdsRequired: "Course IDs are required",
+      courseIdsArray: "Course IDs must be an array",
     },
   },
   common: {

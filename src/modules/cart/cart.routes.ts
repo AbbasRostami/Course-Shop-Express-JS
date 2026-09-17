@@ -12,8 +12,13 @@ import {
   clearCartController,
   getCartController,
   removeFromCartController,
+  syncCartController,
 } from "./cart.controller.js";
-import { addToCartSchema, removeFromCartSchema } from "./cart.validator.js";
+import {
+  addToCartSchema,
+  removeFromCartSchema,
+  syncCartSchema,
+} from "./cart.validator.js";
 
 const router = Router();
 
@@ -28,6 +33,13 @@ router.post(
   "/items",
   validate(addToCartSchema),
   asyncHandler(addToCartController),
+);
+
+// [POST] Sync guest cart with user cart (after login)
+router.post(
+  "/sync",
+  validate(syncCartSchema),
+  asyncHandler(syncCartController),
 );
 
 // [DELETE] Remove course from cart

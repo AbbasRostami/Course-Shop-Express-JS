@@ -5,6 +5,7 @@ import {
   validateDiscount,
 } from "../discount/discount.service.js";
 import { cartInclude, CartWithItems } from "./cart.types.js";
+import { SyncCartInput } from "./cart.validator.js";
 
 // [UTIL] Format cart for response (keep bilingual properties)
 const formatCart = (cart: CartWithItems) => {
@@ -94,6 +95,91 @@ export const cartService = {
     });
 
     return { message: "cart.success.added" };
+  },
+
+  // [LOGIC] Sync guest cart with user cart (merge after login)
+  async syncCart(userId: string, data: SyncCartInput) {
+    const { courseIds } = data;
+
+    // [LOGIC] Deduplicate incoming IDs
+    const uniqueIds = [...new Set(courseIds)];
+
+    // [DB] Fetch valid published paid courses in a single query
+    const validCourses = await prisma.course.findMany({
+      where: {
+        id: { in: uniqueIds },
+        published: true,
+        category: { show: true },
+        price: { gt: 0 },
+      },
+      select: { id: true },
+    });
+
+    const validCourseIds = new Set(validCourses.map((c) => c.id));
+
+    // [DB] Get already enrolled courses in a single query
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        userId,
+        courseId: { in: uniqueIds },
+      },
+      select: { courseId: true },
+    });
+
+    const enrolledIds = new Set(enrollments.map((e) => e.courseId));
+
+    // [DB] Get existing cart items
+    const cart = await this.getOrCreateCart(userId);
+    const existingCartIds = new Set(cart.items.map((i) => i.courseId));
+
+    // [LOGIC] Filter out invalid, purchased, or duplicate courses
+    const toAdd: string[] = [];
+    const skippedInvalid: string[] = [];
+    const skippedEnrolled: string[] = [];
+    const skippedDuplicate: string[] = [];
+
+    for (const courseId of uniqueIds) {
+      if (!validCourseIds.has(courseId)) {
+        skippedInvalid.push(courseId);
+        continue;
+      }
+
+      if (enrolledIds.has(courseId)) {
+        skippedEnrolled.push(courseId);
+        continue;
+      }
+
+      if (existingCartIds.has(courseId)) {
+        skippedDuplicate.push(courseId);
+        continue;
+      }
+
+      toAdd.push(courseId);
+    }
+
+    // [DB] Bulk insert new items
+    if (toAdd.length > 0) {
+      await prisma.cartItem.createMany({
+        data: toAdd.map((courseId) => ({
+          cartId: cart.id,
+          courseId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    const totalSkipped =
+      skippedInvalid.length + skippedEnrolled.length + skippedDuplicate.length;
+
+    return {
+      added: toAdd.length,
+      skipped: totalSkipped,
+      details: {
+        skippedInvalid,
+        skippedEnrolled,
+        skippedDuplicate,
+      },
+    };
   },
 
   // [LOGIC] Get cart with discount calculation

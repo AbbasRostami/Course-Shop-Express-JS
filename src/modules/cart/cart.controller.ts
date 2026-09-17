@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { localizePayload } from "../../utils/localize.js";
 import { cartService } from "./cart.service.js";
-import { AddToCartInput } from "./cart.validator.js";
+import { AddToCartInput, SyncCartInput } from "./cart.validator.js";
 
 // [POST] Add course to cart
 export const addToCartController: RequestHandler = async (req, res) => {
@@ -14,6 +14,28 @@ export const addToCartController: RequestHandler = async (req, res) => {
     status: "success",
     data: {
       message: req.t(result.message as any),
+    },
+  });
+};
+
+// [POST] Sync guest cart with user cart after login
+export const syncCartController: RequestHandler = async (req, res) => {
+  const userId = req.user!.id;
+  const body = req.body as SyncCartInput;
+
+  const result = await cartService.syncCart(userId, body);
+  const cart = await cartService.getCart(userId);
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      message: req.t("cart.success.synced"),
+      summary: {
+        added: result.added,
+        skipped: result.skipped,
+      },
+      details: result.details,
+      cart: localizePayload(cart, req.locale),
     },
   });
 };

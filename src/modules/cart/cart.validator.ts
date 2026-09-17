@@ -14,4 +14,17 @@ export const removeFromCartSchema = z.object({
   }),
 });
 
+// [VALID] Sync cart schema (merge guest cart with user cart)
+export const syncCartSchema = z.object({
+  body: z.object({
+    courseIds: z
+      .array(z.string().uuid("cart.validation.courseIdInvalid"), {
+        error: "cart.validation.courseIdsArray",
+      })
+      .min(1, "cart.errors.emptyCourseIds")
+      .max(50, "cart.errors.tooManyCourseIds"),
+  }),
+});
+
 export type AddToCartInput = z.infer<typeof addToCartSchema>["body"];
+export type SyncCartInput = z.infer<typeof syncCartSchema>["body"];
