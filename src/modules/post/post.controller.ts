@@ -1,11 +1,14 @@
 import { RequestHandler } from "express";
 import { getUserIdFromRequest } from "../../utils/getUserIdFromRequest.js";
+import { localizePayload } from "../../utils/localize.js";
 import { postService } from "./post.service.js";
-import { ListPostsAdminQuery, ListPostsPublicQuery } from "./post.validator.js";
+import {
+  ListPostsAdminQuery,
+  ListPostsPublicQuery,
+} from "./post.validator.js";
 
 // [POST] Create post
 export const createPostController: RequestHandler = async (req, res) => {
-  // [UPLOAD] Extract image URL if uploaded
   let imageUrl: string | undefined;
   if (req.file) {
     imageUrl = req.file.path;
@@ -15,7 +18,10 @@ export const createPostController: RequestHandler = async (req, res) => {
 
   return res.status(201).json({
     status: "success",
-    data: { message: "پست با موفقیت ایجاد شد", post },
+    data: {
+      message: req.t("post.success.created"),
+      post: localizePayload(post, req.locale),
+    },
   });
 };
 
@@ -23,7 +29,6 @@ export const createPostController: RequestHandler = async (req, res) => {
 export const updatePostController: RequestHandler = async (req, res) => {
   const id = req.params.id as string;
 
-  // [UPLOAD] Extract image URL if uploaded
   let imageUrl: string | undefined;
   if (req.file) {
     imageUrl = req.file.path;
@@ -33,7 +38,10 @@ export const updatePostController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "پست با موفقیت ویرایش شد", post },
+    data: {
+      message: req.t("post.success.updated"),
+      post: localizePayload(post, req.locale),
+    },
   });
 };
 
@@ -47,8 +55,10 @@ export const togglePublishPostController: RequestHandler = async (req, res) => {
   return res.status(200).json({
     status: "success",
     data: {
-      message: published ? "پست با موفقیت منتشر شد" : "پست با موفقیت پنهان شد",
-      post,
+      message: req.t(
+        published ? "post.success.published" : "post.success.hidden",
+      ),
+      post: localizePayload(post, req.locale),
     },
   });
 };
@@ -60,17 +70,22 @@ export const deletePostController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { message: "پست با موفقیت حذف شد" },
+    data: { message: req.t("post.success.deleted") },
   });
 };
 
 // [GET] Admin list posts
 export const getAdminPostsController: RequestHandler = async (req, res) => {
-  const result = await postService.getAdminPosts(req.query as ListPostsAdminQuery);
+  const result = await postService.getAdminPosts(
+    req.query as ListPostsAdminQuery,
+  );
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -85,7 +100,10 @@ export const getPublicPostsController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };
 
@@ -98,6 +116,8 @@ export const getPostBySlugController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { post },
+    data: {
+      post: localizePayload(post, req.locale),
+    },
   });
 };

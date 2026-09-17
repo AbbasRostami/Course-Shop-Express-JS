@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { localizePayload } from "../../utils/localize.js";
 import { enrollmentService } from "./enrollment.service.js";
 import { ListMyCoursesQuery } from "./enrollment.validator.js";
 
@@ -11,7 +12,10 @@ export const enrollController: RequestHandler = async (req, res) => {
 
   return res.status(201).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+      enrollment: localizePayload(result.enrollment, req.locale),
+    },
   });
 };
 
@@ -26,6 +30,9 @@ export const getMyEnrollmentsController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      items: localizePayload(result.items, req.locale),
+      pagination: result.pagination,
+    },
   });
 };

@@ -5,10 +5,23 @@ export const enrollmentInclude = {
   course: {
     include: {
       category: {
-        select: { id: true, name: true, slug: true },
+        select: {
+          id: true,
+          nameFa: true,
+          nameEn: true,
+          slugFa: true,
+          slugEn: true,
+        },
       },
       teacher: {
-        select: { id: true, name: true, slug: true, avatar: true },
+        select: {
+          id: true,
+          nameFa: true,
+          nameEn: true,
+          slugFa: true,
+          slugEn: true,
+          avatar: true,
+        },
       },
       _count: {
         select: {

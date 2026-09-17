@@ -25,18 +25,18 @@ const formatEnrollment = (item: EnrollmentWithRelations) => {
 };
 
 export const enrollmentService = {
-  // [DB] Enroll user in free course
+  // [DB] Enroll user in free course (works with Fa or En slug)
   async enroll(userId: string, slug: string) {
     const course = await prisma.course.findFirst({
       where: {
-        slug,
+        OR: [{ slugFa: slug }, { slugEn: slug }],
         published: true,
         category: { show: true },
       },
     });
 
     if (!course) {
-      throw new AppError("دوره مورد نظر یافت نشد", 404);
+      throw new AppError("enrollment.errors.courseNotFound", 404);
     }
 
     // [DB] Check for existing enrollment
@@ -47,15 +47,12 @@ export const enrollmentService = {
     });
 
     if (existingEnrollment) {
-      throw new AppError("شما قبلاً در این دوره ثبت‌نام کرده‌اید", 400);
+      throw new AppError("enrollment.errors.alreadyEnrolled", 400);
     }
 
     // [LOGIC] Block direct enrollment for paid courses
     if (course.price > 0) {
-      throw new AppError(
-        "برای خرید دوره‌های پولی از سبد خرید استفاده کنید",
-        400,
-      );
+      throw new AppError("enrollment.errors.paidCourseBlocked", 400);
     }
 
     // [DB] Create free enrollment
@@ -69,8 +66,10 @@ export const enrollmentService = {
         course: {
           select: {
             id: true,
-            title: true,
-            slug: true,
+            titleFa: true,
+            titleEn: true,
+            slugFa: true,
+            slugEn: true,
             imageUrl: true,
             price: true,
           },
@@ -80,7 +79,7 @@ export const enrollmentService = {
 
     return {
       enrollment,
-      message: "با موفقیت در دوره رایگان ثبت‌نام شدید",
+      message: "enrollment.success.freeEnrolled",
     };
   },
 

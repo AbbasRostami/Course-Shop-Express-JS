@@ -11,13 +11,15 @@ export type UpdatePostInputWithImage = UpdatePostInput & {
   imageUrl?: string;
 };
 
-// [DB] Post include with category and comment count
+// [DB] Post include with category and comment count (bilingual)
 export const postInclude = {
   category: {
     select: {
       id: true,
-      name: true,
-      slug: true,
+      nameFa: true,
+      nameEn: true,
+      slugFa: true,
+      slugEn: true,
     },
   },
   _count: {

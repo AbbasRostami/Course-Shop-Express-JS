@@ -20,7 +20,10 @@ import {
   PostWithStats,
   UpdatePostInputWithImage,
 } from "./post.types.js";
-import { ListPostsAdminQuery, ListPostsPublicQuery } from "./post.validator.js";
+import {
+  ListPostsAdminQuery,
+  ListPostsPublicQuery,
+} from "./post.validator.js";
 
 // [UTIL] Format post - replace _count with stats
 const formatPost = (post: PostWithRelations): PostWithStats => {
@@ -66,14 +69,14 @@ const addFavoriteInfoToList = async (posts: any[], userId?: string) => {
   }));
 };
 
-// [ERROR] Handle duplicate title (P2002)
+// [ERROR] Handle duplicate title/slug (P2002)
 const handleUniqueError = (error: unknown): never => {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   ) {
-    throw new AppError("پستی با این عنوان قبلاً ثبت شده است", 400, {
-      title: "این عنوان قبلاً استفاده شده است",
+    throw new AppError("post.errors.titleExists", 400, {
+      title: "post.errors.titleExists",
     });
   }
   throw error;
@@ -81,11 +84,13 @@ const handleUniqueError = (error: unknown): never => {
 
 // [DB] Validate category exists
 const validateCategoryExists = async (categoryId: string) => {
-  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  const category = await prisma.category.findUnique({
+    where: { id: categoryId },
+  });
 
   if (!category) {
-    throw new AppError("دسته‌بندی مورد نظر یافت نشد", 400, {
-      categoryId: "این دسته‌بندی وجود ندارد",
+    throw new AppError("post.errors.categoryNotFound", 400, {
+      categoryId: "post.errors.categoryNotFound",
     });
   }
 };
@@ -98,9 +103,12 @@ export const postService = {
     try {
       const post = await prisma.post.create({
         data: {
-          title: data.title,
-          slug: createSlug(data.title),
-          content: sanitizeRichText(data.content),
+          titleFa: data.titleFa,
+          titleEn: data.titleEn,
+          slugFa: createSlug(data.titleFa),
+          slugEn: createSlug(data.titleEn),
+          contentFa: sanitizeRichText(data.contentFa),
+          contentEn: sanitizeRichText(data.contentEn),
           imageUrl: data.imageUrl,
           categoryId: data.categoryId,
           published: data.published,
@@ -110,7 +118,6 @@ export const postService = {
 
       return formatPost(post);
     } catch (error) {
-      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -124,11 +131,10 @@ export const postService = {
     const existing = await prisma.post.findUnique({ where: { id } });
 
     if (!existing) {
-      // [CLEANUP] Remove uploaded image if post not found
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
-      throw new AppError("پست مورد نظر یافت نشد", 404);
+      throw new AppError("post.errors.notFound", 404);
     }
 
     if (data.categoryId) {
@@ -138,12 +144,19 @@ export const postService = {
     const updateData: Prisma.PostUpdateInput = {};
 
     // [LOGIC] Auto-generate slug on title change
-    if (data.title !== undefined) {
-      updateData.title = data.title;
-      updateData.slug = createSlug(data.title);
+    if (data.titleFa !== undefined) {
+      updateData.titleFa = data.titleFa;
+      updateData.slugFa = createSlug(data.titleFa);
     }
-    if (data.content !== undefined) {
-      updateData.content = sanitizeRichText(data.content);
+    if (data.titleEn !== undefined) {
+      updateData.titleEn = data.titleEn;
+      updateData.slugEn = createSlug(data.titleEn);
+    }
+    if (data.contentFa !== undefined) {
+      updateData.contentFa = sanitizeRichText(data.contentFa);
+    }
+    if (data.contentEn !== undefined) {
+      updateData.contentEn = sanitizeRichText(data.contentEn);
     }
     if (data.categoryId !== undefined) {
       updateData.category = { connect: { id: data.categoryId } };
@@ -158,14 +171,12 @@ export const postService = {
         include: postInclude,
       });
 
-      // [CLEANUP] Remove old image after successful update
       if (data.imageUrl && existing.imageUrl) {
         await removeCloudinaryImage(existing.imageUrl);
       }
 
       return formatPost(post);
     } catch (error) {
-      // [CLEANUP] Remove uploaded image on failure
       if (data.imageUrl) {
         await removeCloudinaryImage(data.imageUrl);
       }
@@ -182,23 +193,18 @@ export const postService = {
     });
 
     if (!existing) {
-      throw new AppError("پست مورد نظر یافت نشد", 404);
+      throw new AppError("post.errors.notFound", 404);
     }
 
-    // [LOGIC] Prevent redundant toggle
     if (existing.published === published) {
       throw new AppError(
-        published ? "پست از قبل منتشر شده است" : "پست از قبل پنهان است",
+        published ? "post.errors.alreadyPublished" : "post.errors.alreadyHidden",
         400,
       );
     }
 
-    // [LOGIC] Block publish if category is hidden
     if (published && !existing.category.show) {
-      throw new AppError(
-        "نمی‌توان پست را منتشر کرد چون دسته‌بندی آن غیرفعال است",
-        400,
-      );
+      throw new AppError("post.errors.categoryHidden", 400);
     }
 
     const post = await prisma.post.update({
@@ -215,12 +221,11 @@ export const postService = {
     const existing = await prisma.post.findUnique({ where: { id } });
 
     if (!existing) {
-      throw new AppError("پست مورد نظر یافت نشد", 404);
+      throw new AppError("post.errors.notFound", 404);
     }
 
     await prisma.post.delete({ where: { id } });
 
-    // [CLEANUP] Remove image from Cloudinary
     if (existing.imageUrl) {
       await removeCloudinaryImage(existing.imageUrl);
     }
@@ -238,8 +243,10 @@ export const postService = {
 
     if (query.search) {
       where.OR = [
-        { title: { contains: query.search, mode: "insensitive" } },
-        { content: { contains: query.search, mode: "insensitive" } },
+        { titleFa: { contains: query.search, mode: "insensitive" } },
+        { titleEn: { contains: query.search, mode: "insensitive" } },
+        { contentFa: { contains: query.search, mode: "insensitive" } },
+        { contentEn: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
@@ -248,7 +255,13 @@ export const postService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.post.findMany({ where, skip, take, orderBy, include: postInclude }),
+      prisma.post.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        include: postInclude,
+      }),
       prisma.post.count({ where }),
     ]);
 
@@ -268,15 +281,23 @@ export const postService = {
     };
 
     if (query.category) {
-      where.category = { slug: query.category, show: true };
+      where.category = {
+        OR: [
+          { slugFa: query.category },
+          { slugEn: query.category },
+        ],
+        show: true,
+      };
     }
 
     if (query.search) {
       where.AND = [
         {
           OR: [
-            { title: { contains: query.search, mode: "insensitive" } },
-            { content: { contains: query.search, mode: "insensitive" } },
+            { titleFa: { contains: query.search, mode: "insensitive" } },
+            { titleEn: { contains: query.search, mode: "insensitive" } },
+            { contentFa: { contains: query.search, mode: "insensitive" } },
+            { contentEn: { contains: query.search, mode: "insensitive" } },
           ],
         },
       ];
@@ -287,15 +308,24 @@ export const postService = {
     const orderBy = { [sortBy]: order };
 
     const [items, total] = await Promise.all([
-      prisma.post.findMany({ where, skip, take, orderBy, include: postInclude }),
+      prisma.post.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        include: postInclude,
+      }),
       prisma.post.count({ where }),
     ]);
 
     const formattedPosts = formatPosts(items);
     const postIds = formattedPosts.map((p) => p.id);
 
-    // [DB] Attach reactions per post
-    const reactionMap = await getReactionCountsForList("postId", postIds, userId);
+    const reactionMap = await getReactionCountsForList(
+      "postId",
+      postIds,
+      userId,
+    );
 
     const postsWithReactions = formattedPosts.map((post) => ({
       ...post,
@@ -306,7 +336,6 @@ export const postService = {
       },
     }));
 
-    // [DB] Attach favorite status per post
     const finalItems = await addFavoriteInfoToList(postsWithReactions, userId);
 
     return {
@@ -315,11 +344,11 @@ export const postService = {
     };
   },
 
-  // [DB] Get single post by slug with reactions and favorite
+  // [DB] Get single post by slug (Fa or En) with reactions and favorite
   async getPostBySlug(slug: string, userId?: string) {
     const post = await prisma.post.findFirst({
       where: {
-        slug,
+        OR: [{ slugFa: slug }, { slugEn: slug }],
         published: true,
         category: { show: true },
       },
@@ -327,12 +356,11 @@ export const postService = {
     });
 
     if (!post) {
-      throw new AppError("پست مورد نظر یافت نشد", 404);
+      throw new AppError("post.errors.notFound", 404);
     }
 
     const formattedPost = formatPost(post);
 
-    // [DB] Load reactions in parallel
     const [counts, myReaction] = await Promise.all([
       getReactionCounts("postId", post.id),
       getMyReaction("postId", post.id, userId),

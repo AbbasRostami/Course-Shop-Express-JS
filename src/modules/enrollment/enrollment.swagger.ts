@@ -5,15 +5,20 @@ export const enrollmentSwagger = {
         tags: ["Enrollment"],
         summary: "Enroll in a free course",
         description:
-          "Enrolls the authenticated user in a free course only. Paid courses must be purchased through cart and checkout flow.",
+          "Enrolls the authenticated user in a free course only. Paid courses must be purchased through cart. **Slug can be Persian or English.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
           {
             name: "slug",
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "slug",
+            description: "Course slug (Fa or En)",
           },
         ],
         responses: {
@@ -24,6 +29,7 @@ export const enrollmentSwagger = {
                 example: {
                   status: "success",
                   data: {
+                    message: "با موفقیت در دوره رایگان ثبت‌نام شدید",
                     enrollment: {
                       id: "enroll-uuid",
                       pricePaid: 0,
@@ -36,7 +42,6 @@ export const enrollmentSwagger = {
                         price: 0,
                       },
                     },
-                    message: "با موفقیت در دوره رایگان ثبت‌نام شدید",
                   },
                 },
               },
@@ -44,12 +49,11 @@ export const enrollmentSwagger = {
           },
           400: {
             description:
-              "ثبت‌نام تکراری یا تلاش برای ثبت‌نام مستقیم در دوره پولی.",
+              "Already enrolled or attempting to enroll in a paid course.",
             content: {
               "application/json": {
                 examples: {
                   alreadyEnrolled: {
-                    summary: "قبلاً ثبت‌نام کرده",
                     value: {
                       status: "fail",
                       data: {
@@ -58,7 +62,6 @@ export const enrollmentSwagger = {
                     },
                   },
                   paidCourse: {
-                    summary: "دوره پولی",
                     value: {
                       status: "error",
                       message:
@@ -81,21 +84,16 @@ export const enrollmentSwagger = {
         tags: ["Enrollment"],
         summary: "Get user's enrolled courses",
         description:
-          "Returns list of courses the user has enrolled in, with pagination.",
+          "Returns list of enrolled courses with pagination. **Text fields are localized based on `Accept-Language` header.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
-            name: "page",
-            in: "query",
-            schema: { type: "string", example: "1" },
-            description: "Page",
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          {
-            name: "limit",
-            in: "query",
-            schema: { type: "string", example: "10" },
-            description: "limit",
-          },
+          { name: "page", in: "query", schema: { type: "string", example: "1" } },
+          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
         ],
         responses: {
           200: {
@@ -123,10 +121,13 @@ export const enrollmentSwagger = {
                             name: "فرانت‌اند",
                             slug: "فرانت-اند",
                           },
-                          stats: {
-                            enrollments: 25,
-                            comments: 12,
+                          teacher: {
+                            id: "teacher-uuid",
+                            name: "عباس رستمی",
+                            slug: "abbas-rostami",
+                            avatar: null,
                           },
+                          stats: { enrollments: 25, comments: 12 },
                         },
                       },
                     ],
