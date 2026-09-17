@@ -1,7 +1,9 @@
 const cartExample = {
   id: "cart-uuid",
-  totalAmount: 800000,
   totalItems: 2,
+  subtotal: 800000,
+  discount: null,
+  totalPayment: 800000,
   items: [
     {
       id: "item-uuid-1",
@@ -24,8 +26,15 @@ export const cartSwagger = {
         tags: ["Cart"],
         summary: "Get user's cart",
         description:
-          "Returns active cart with all items and totalAmount for the authenticated user.",
+          "Returns active cart with all items, subtotal, applied discount and totalPayment. **Text fields are localized based on `Accept-Language` header.**",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+        ],
         responses: {
           200: {
             description: "User cart retrieved successfully.",
@@ -53,9 +62,7 @@ export const cartSwagger = {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "سبد خرید با موفقیت خالی شد",
-                  },
+                  data: { message: "سبد خرید با موفقیت خالی شد" },
                 },
               },
             },
@@ -93,20 +100,17 @@ export const cartSwagger = {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "دوره به سبد خرید اضافه شد",
-                  },
+                  data: { message: "دوره به سبد خرید اضافه شد" },
                 },
               },
             },
           },
           400: {
-            description: `Invalid request - Validation rules:\n
-- courseId:
-  - Required.
-  - Must be a valid UUID v4.\n
+            description: `Invalid request - Validation rules:
+
+- courseId: Required UUID.
 - Cannot add free courses (price = 0).
-- Cannot add courses you are already enrolled in.`,
+- Cannot add already enrolled courses.`,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           404: { description: "Course not found or unpublished." },
@@ -127,7 +131,6 @@ export const cartSwagger = {
             in: "path",
             required: true,
             schema: { type: "string", format: "uuid" },
-            description: "id",
           },
         ],
         responses: {
@@ -137,9 +140,7 @@ export const cartSwagger = {
               "application/json": {
                 example: {
                   status: "success",
-                  data: {
-                    message: "دوره از سبد خرید حذف شد",
-                  },
+                  data: { message: "دوره از سبد خرید حذف شد" },
                 },
               },
             },

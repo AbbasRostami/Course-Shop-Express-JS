@@ -173,11 +173,18 @@ export const faTranslations = {
       noUpdateData: "حداقل یک فیلد برای ویرایش ارسال کنید",
       hasCourses:
         "این مدرس {{count}} دوره دارد. ابتدا دوره‌ها را حذف یا به مدرس دیگری منتقل کنید",
+      alreadyActive: "مدرس از قبل فعال است",
+      alreadyInactive: "مدرس از قبل غیرفعال است",
+      categoryHidden: "این مدرس غیرفعال است، دوره‌های او قابل انتشار نیستند",
     },
     success: {
       created: "مدرس با موفقیت ایجاد شد",
       updated: "مدرس با موفقیت ویرایش شد",
       deleted: "مدرس با موفقیت حذف شد",
+      activated:
+        "مدرس با موفقیت فعال شد. دوره‌های او مجدداً قابل انتشار خواهند بود.",
+      deactivated:
+        "مدرس با موفقیت غیرفعال شد. دوره‌های وابسته نیز غیرفعال شدند.",
     },
     validation: {
       nameFaRequired: "نام فارسی مدرس الزامی است",
@@ -186,6 +193,9 @@ export const faTranslations = {
       nameMax: "نام مدرس نباید بیشتر از ۱۰۰ کاراکتر باشد",
       bioMax: "بیوگرافی نباید بیشتر از ۲۰۰۰ کاراکتر باشد",
       idInvalid: "شناسه نامعتبر است",
+      showBoolean: "وضعیت نمایش باید boolean باشد",
+      pageNumber: "page باید عدد باشد",
+      limitNumber: "limit باید عدد باشد",
     },
   },
   category: {
@@ -682,11 +692,19 @@ export const enTranslations: typeof faTranslations = {
       noUpdateData: "Please provide at least one field to update",
       hasCourses:
         "This teacher has {{count}} courses. Please delete or reassign them first",
+      alreadyActive: "Teacher is already active",
+      alreadyInactive: "Teacher is already inactive",
+      categoryHidden:
+        "This teacher is inactive, their courses cannot be published",
     },
     success: {
       created: "Teacher created successfully",
       updated: "Teacher updated successfully",
       deleted: "Teacher deleted successfully",
+      activated:
+        "Teacher activated successfully. Their courses can be republished.",
+      deactivated:
+        "Teacher deactivated successfully. Related courses were also unpublished.",
     },
     validation: {
       nameFaRequired: "Persian name of the teacher is required",
@@ -695,6 +713,9 @@ export const enTranslations: typeof faTranslations = {
       nameMax: "Teacher name must not exceed 100 characters",
       bioMax: "Biography must not exceed 2000 characters",
       idInvalid: "Invalid ID",
+      showBoolean: "Visibility must be boolean",
+      pageNumber: "Page must be a number",
+      limitNumber: "Limit must be a number",
     },
   },
   category: {

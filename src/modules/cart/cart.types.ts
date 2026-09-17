@@ -1,14 +1,16 @@
 import { Prisma } from "../../../generated/prisma/client.js";
 
-// [DB] Cart include with items and course details
+// [DB] Cart include with items and course details (bilingual)
 export const cartInclude = {
   items: {
     include: {
       course: {
         select: {
           id: true,
-          title: true,
-          slug: true,
+          titleFa: true,
+          titleEn: true,
+          slugFa: true,
+          slugEn: true,
           imageUrl: true,
           price: true,
           level: true,
@@ -16,8 +18,10 @@ export const cartInclude = {
           category: {
             select: {
               id: true,
-              name: true,
-              slug: true,
+              nameFa: true,
+              nameEn: true,
+              slugFa: true,
+              slugEn: true,
               show: true,
             },
           },

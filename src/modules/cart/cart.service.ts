@@ -6,13 +6,15 @@ import {
 } from "../discount/discount.service.js";
 import { cartInclude, CartWithItems } from "./cart.types.js";
 
-// [UTIL] Format cart for response
+// [UTIL] Format cart for response (keep bilingual properties)
 const formatCart = (cart: CartWithItems) => {
   const formattedItems = cart.items.map((item) => ({
     id: item.id,
     courseId: item.course.id,
-    title: item.course.title,
-    slug: item.course.slug,
+    titleFa: item.course.titleFa,
+    titleEn: item.course.titleEn,
+    slugFa: item.course.slugFa,
+    slugEn: item.course.slugEn,
     price: item.course.price,
     imageUrl: item.course.imageUrl,
     level: item.course.level,
@@ -57,19 +59,16 @@ export const cartService = {
         published: true,
         category: { show: true },
       },
-      select: { id: true, title: true, price: true },
+      select: { id: true, price: true },
     });
 
     if (!course) {
-      throw new AppError("دوره مورد نظر یافت نشد یا غیرفعال است", 404);
+      throw new AppError("cart.errors.notFound", 404);
     }
 
     // [LOGIC] Block free courses
     if (course.price === 0) {
-      throw new AppError(
-        "دوره‌های رایگان نیازی به سبد خرید ندارند. مستقیم ثبت‌نام کنید",
-        400,
-      );
+      throw new AppError("cart.errors.freeBlocked", 400);
     }
 
     // [DB] Check enrollment
@@ -78,7 +77,7 @@ export const cartService = {
     });
 
     if (isEnrolled) {
-      throw new AppError("شما قبلاً این دوره را خریداری کرده‌اید", 400);
+      throw new AppError("cart.errors.alreadyPurchased", 400);
     }
 
     const cart = await this.getOrCreateCart(userId);
@@ -86,7 +85,7 @@ export const cartService = {
     // [LOGIC] Prevent duplicates
     const alreadyInCart = cart.items.some((i) => i.courseId === courseId);
     if (alreadyInCart) {
-      throw new AppError("این دوره از قبل در سبد خرید شما موجود است", 409);
+      throw new AppError("cart.errors.alreadyInCart", 409);
     }
 
     // [DB] Add item to cart
@@ -94,7 +93,7 @@ export const cartService = {
       data: { cartId: cart.id, courseId },
     });
 
-    return { message: "دوره به سبد خرید اضافه شد" };
+    return { message: "cart.success.added" };
   },
 
   // [LOGIC] Get cart with discount calculation
@@ -145,14 +144,14 @@ export const cartService = {
 
     const item = cart.items.find((i) => i.courseId === courseId);
     if (!item) {
-      throw new AppError("این دوره در سبد خرید شما یافت نشد", 404);
+      throw new AppError("cart.errors.itemNotFound", 404);
     }
 
     await prisma.cartItem.delete({
       where: { id: item.id },
     });
 
-    return { message: "دوره از سبد خرید حذف شد" };
+    return { message: "cart.success.removed" };
   },
 
   // [DB] Clear all cart items
@@ -163,6 +162,6 @@ export const cartService = {
       where: { cartId: cart.id },
     });
 
-    return { message: "سبد خرید با موفقیت خالی شد" };
+    return { message: "cart.success.cleared" };
   },
 };

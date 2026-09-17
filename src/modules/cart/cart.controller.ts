@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { localizePayload } from "../../utils/localize.js";
 import { cartService } from "./cart.service.js";
 import { AddToCartInput } from "./cart.validator.js";
 
@@ -11,7 +12,9 @@ export const addToCartController: RequestHandler = async (req, res) => {
 
   return res.status(201).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
@@ -22,7 +25,9 @@ export const getCartController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: { cart },
+    data: {
+      cart: localizePayload(cart, req.locale),
+    },
   });
 };
 
@@ -35,7 +40,9 @@ export const removeFromCartController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
 
@@ -46,6 +53,8 @@ export const clearCartController: RequestHandler = async (req, res) => {
 
   return res.status(200).json({
     status: "success",
-    data: result,
+    data: {
+      message: req.t(result.message as any),
+    },
   });
 };
