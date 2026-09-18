@@ -3,14 +3,36 @@ import { ZodError, ZodSchema } from "zod";
 import { AppError } from "../utils/AppError.js";
 import { removeCloudinaryImage } from "../utils/cloudinary.js";
 
+// [UTIL] Recursively convert empty strings to undefined
+const sanitizeEmptyStrings = (obj: any): any => {
+  if (typeof obj !== "object" || obj === null) return obj;
+
+  const cleaned = Array.isArray(obj) ? [...obj] : { ...obj };
+
+  for (const key in cleaned) {
+    if (cleaned[key] === "") {
+      cleaned[key] = undefined;
+    } else if (typeof cleaned[key] === "object") {
+      cleaned[key] = sanitizeEmptyStrings(cleaned[key]);
+    }
+  }
+
+  return cleaned;
+};
+
 // [MW] Request validation
 export const validate = (schema: ZodSchema) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
+      // [LOGIC] Convert empty strings to undefined to support optional form-data fields
+      const sanitizedBody = sanitizeEmptyStrings(req.body);
+      const sanitizedQuery = sanitizeEmptyStrings(req.query);
+      const sanitizedParams = sanitizeEmptyStrings(req.params);
+
       const parsed = (await schema.parseAsync({
-        body: req.body,
-        query: req.query,
-        params: req.params,
+        body: sanitizedBody,
+        query: sanitizedQuery,
+        params: sanitizedParams,
       })) as {
         body?: unknown;
         query?: unknown;
