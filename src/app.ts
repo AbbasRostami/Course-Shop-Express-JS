@@ -1,7 +1,6 @@
 import cookieParser from "cookie-parser";
 import cors, { CorsOptions } from "cors";
 import express from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
@@ -80,22 +79,6 @@ app.use(middleware.handle(i18next));
 
 // [MW] Static files
 app.use(express.static("public"));
-
-// [RATE] Global API rate limiter
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    status: "fail",
-    data: {
-      message:
-        "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید.",
-    },
-  },
-});
-app.use("/api", globalLimiter);
 
 // [SWAGGER] API documentation UI
 app.use(

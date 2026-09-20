@@ -1,6 +1,5 @@
 import type { Request } from "express";
 import { ipKeyGenerator, rateLimit } from "express-rate-limit";
-import i18next from "i18next";
 
 // [UTIL] Normalize IP
 const getIp = (req: Request) => ipKeyGenerator(req.ip ?? "unknown");
@@ -11,19 +10,12 @@ const getEmail = (req: Request) => {
   return typeof email === "string" ? email.trim().toLowerCase() : undefined;
 };
 
-// [UTIL] Get request locale
-const getLocale = (req: Request): "fa" | "en" => {
-  const lang = req.headers["accept-language"]?.split(",")[0]?.split("-")[0];
-  return lang === "en" ? "en" : "fa";
-};
-
-// [UTIL] Translate fail response
+// [UTIL] Translate fail response using req.t
 const jsonMessage = (req: Request, key: string) => {
-  const locale = getLocale(req);
   return {
     status: "fail",
-    data: { 
-      message: i18next.t(key as any, { lng: locale }) 
+    data: {
+      message: req.t(key as any),
     },
   };
 };
@@ -151,5 +143,6 @@ export const resendChangeEmailCodeLimiter = rateLimit({
     const ip = getIp(req);
     return `resend-change-email:${ip}`;
   },
-  message: (req: Request) => jsonMessage(req, "auth.limiters.resendChangeEmail"),
+  message: (req: Request) =>
+    jsonMessage(req, "auth.limiters.resendChangeEmail"),
 });
