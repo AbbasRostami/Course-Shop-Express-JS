@@ -198,6 +198,7 @@ export const authService = {
         id: updatedUser.id,
         email: updatedUser.email,
         name: updatedUser.name,
+        role: updatedUser.role,
       },
     };
   },
@@ -234,7 +235,12 @@ export const authService = {
     return {
       accessToken,
       refreshToken,
-      user: { id: user.id, email: user.email, name: user.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     };
   },
 
