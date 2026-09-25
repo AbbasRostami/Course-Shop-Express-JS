@@ -25,6 +25,7 @@ const walletWithUser = {
       email: true,
       name: true,
       phone: true,
+      avatar: true,
     },
   },
 };
@@ -36,6 +37,7 @@ const transactionWithUser = {
       id: true,
       email: true,
       name: true,
+      avatar: true,
     },
   },
   course: {

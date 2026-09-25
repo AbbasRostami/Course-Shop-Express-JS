@@ -15,12 +15,23 @@ export const walletSwagger = {
                 example: {
                   status: "success",
                   data: {
-                    wallet: {
-                      id: "wallet-uuid",
-                      balance: 100000,
-                      userId: "user-uuid",
-                      updatedAt: "2026-01-15T14:00:00.000Z",
-                    },
+                    items: [
+                      {
+                        id: "wallet-uuid",
+                        balance: 5000000,
+                        userId: "user-uuid",
+                        user: {
+                          id: "user-uuid",
+                          email: "ali@example.com",
+                          name: "علی رضایی",
+                          phone: "09121234567",
+                          avatar:
+                            "https://res.cloudinary.com/.../avatars/user.jpg",
+                        },
+                        updatedAt: "2026-01-15T14:00:00.000Z",
+                      },
+                    ],
+                    pagination: { page: 1, limit: 20, total: 150 },
                   },
                 },
               },
@@ -174,26 +185,26 @@ Creates a PENDING transaction and returns ZarinPal payment URL.
                   data: {
                     items: [
                       {
-                        id: "tx-uuid-1",
+                        id: "tx-uuid",
                         amount: 1000000,
                         status: "SUCCESS",
                         type: "CHARGE",
-                        description: "شارژ کیف پول",
+                        authority: "S0000...",
                         refId: "12345678",
+                        description: "شارژ کیف پول",
+                        userId: "user-uuid",
+                        user: {
+                          id: "user-uuid",
+                          email: "ali@example.com",
+                          name: "علی",
+                          avatar:
+                            "https://res.cloudinary.com/.../avatars/user.jpg",
+                        },
                         course: null,
                         createdAt: "2026-01-15T14:00:00.000Z",
                       },
-                      {
-                        id: "tx-uuid-2",
-                        amount: 800000,
-                        status: "SUCCESS",
-                        type: "PURCHASE",
-                        description: "پرداخت سفارش #b09dc6c8",
-                        course: null,
-                        createdAt: "2026-01-14T15:00:00.000Z",
-                      },
                     ],
-                    pagination: { page: 1, limit: 10, total: 25 },
+                    pagination: { page: 1, limit: 20, total: 500 },
                   },
                 },
               },
