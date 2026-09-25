@@ -36,6 +36,7 @@ export const orderAdminInclude = {
       id: true,
       email: true,
       name: true,
+      avatar: true,
     },
   },
   items: {
