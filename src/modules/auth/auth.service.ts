@@ -177,7 +177,11 @@ export const authService = {
       throw new AppError("auth.errors.accountBanned", 403);
     }
 
-    const accessToken = generateAccessToken({ id: user.id, email: user.email });
+    const accessToken = generateAccessToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
     const refreshToken = generateRefreshToken({ id: user.id });
 
     // [DB] Mark user as verified and store refresh token
@@ -223,7 +227,11 @@ export const authService = {
       throw new AppError("auth.errors.invalidCredentials", 401);
     }
 
-    const accessToken = generateAccessToken({ id: user.id, email: user.email });
+    const accessToken = generateAccessToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
     const refreshToken = generateRefreshToken({ id: user.id });
 
     // [DB] Store new refresh token
@@ -272,6 +280,7 @@ export const authService = {
       const newAccessToken = generateAccessToken({
         id: user.id,
         email: user.email,
+        role: user.role,
       });
       const newRefreshToken = generateRefreshToken({ id: user.id });
 
