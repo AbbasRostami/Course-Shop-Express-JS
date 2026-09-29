@@ -2,11 +2,13 @@ import { RequestHandler } from "express";
 import { AppError } from "../../utils/AppError.js";
 import { authService } from "./auth.service.js";
 
+const isProd = process.env.NODE_ENV === "production";
+
 // [CONFIG] Access token cookie options (15 min)
 const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,
-  sameSite: "none" as const,
+  secure: isProd,
+  sameSite: isProd ? ("none" as const) : ("lax" as const),
   path: "/",
   maxAge: 15 * 60 * 1000,
 };
@@ -14,8 +16,8 @@ const ACCESS_COOKIE_OPTIONS = {
 // [CONFIG] Refresh token cookie options (7 days)
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,
-  sameSite: "none" as const,
+  secure: isProd,
+  sameSite: isProd ? ("none" as const) : ("lax" as const),
   path: "/api/auth",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
@@ -23,8 +25,8 @@ const REFRESH_COOKIE_OPTIONS = {
 // [CONFIG] Cookie clear options
 const CLEAR_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,
-  sameSite: "none" as const,
+  secure: isProd,
+  sameSite: isProd ? ("none" as const) : ("lax" as const),
   path: "/",
 };
 
