@@ -330,11 +330,15 @@ export const courseService = {
 
     const where: Prisma.CourseWhereInput = {};
 
-    if (query.categories && query.categories.length > 0) {
+    const categoriesInput = query.categories
+      ? (Array.isArray(query.categories) ? query.categories : [query.categories])
+      : [];
+
+    if (categoriesInput.length > 0) {
       where.category = {
         OR: [
-          { slugFa: { in: query.categories } },
-          { slugEn: { in: query.categories } },
+          { slugFa: { in: categoriesInput } },
+          { slugEn: { in: categoriesInput } },
         ],
       };
     }
