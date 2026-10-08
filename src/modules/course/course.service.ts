@@ -235,11 +235,17 @@ export const courseService = {
       category: { show: true },
     };
 
-    if (query.categories && query.categories.length > 0) {
+    const categoriesInput = query.categories
+      ? Array.isArray(query.categories)
+        ? query.categories
+        : [query.categories]
+      : [];
+
+    if (categoriesInput.length > 0) {
       where.category = {
         OR: [
-          { slugFa: { in: query.categories } },
-          { slugEn: { in: query.categories } },
+          { slugFa: { in: categoriesInput } },
+          { slugEn: { in: categoriesInput } },
         ],
         show: true,
       };
@@ -253,7 +259,6 @@ export const courseService = {
       if (query.maxPrice) where.price.lte = Number(query.maxPrice);
     }
 
-    // [LOGIC] Bilingual search (Fa + En)
     if (query.search) {
       where.AND = [
         {
@@ -294,9 +299,7 @@ export const courseService = {
             })
             .then((e) => new Set(e.map((x) => x.courseId)))
         : Promise.resolve(new Set<string>()),
-
       getReactionCountsForList("courseId", courseIds, userId),
-
       userId && courseIds.length > 0
         ? prisma.courseFavorite
             .findMany({
@@ -331,7 +334,9 @@ export const courseService = {
     const where: Prisma.CourseWhereInput = {};
 
     const categoriesInput = query.categories
-      ? (Array.isArray(query.categories) ? query.categories : [query.categories])
+      ? Array.isArray(query.categories)
+        ? query.categories
+        : [query.categories]
       : [];
 
     if (categoriesInput.length > 0) {

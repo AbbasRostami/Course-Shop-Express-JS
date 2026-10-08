@@ -90,10 +90,19 @@ export const deleteCourseController: RequestHandler = async (req, res) => {
 export const getPublicCoursesController: RequestHandler = async (req, res) => {
   const userId = getUserIdFromRequest(req);
 
-  const result = await courseService.getPublicCourses(
-    req.query as ListCoursesPublicQuery,
-    userId,
-  );
+  const rawCategories = req.query.categories;
+  const normalizedCategories = rawCategories
+    ? Array.isArray(rawCategories)
+      ? rawCategories
+      : [rawCategories]
+    : undefined;
+
+  const query = {
+    ...req.query,
+    categories: normalizedCategories,
+  } as ListCoursesPublicQuery;
+
+  const result = await courseService.getPublicCourses(query, userId);
 
   return res.status(200).json({
     status: "success",
@@ -104,11 +113,20 @@ export const getPublicCoursesController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Admin list courses
 export const getAdminCoursesController: RequestHandler = async (req, res) => {
-  const result = await courseService.getAdminCourses(
-    req.query as ListCoursesAdminQuery,
-  );
+  const rawCategories = req.query.categories;
+  const normalizedCategories = rawCategories
+    ? Array.isArray(rawCategories)
+      ? rawCategories
+      : [rawCategories]
+    : undefined;
+
+  const query = {
+    ...req.query,
+    categories: normalizedCategories,
+  } as ListCoursesAdminQuery;
+
+  const result = await courseService.getAdminCourses(query);
 
   return res.status(200).json({
     status: "success",
@@ -119,7 +137,7 @@ export const getAdminCoursesController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Get course by slug (works with Fa or En slug)
+// [GET] Get course by slug
 export const getCourseBySlugController: RequestHandler = async (req, res) => {
   const slug = req.params.slug as string;
   const userId = getUserIdFromRequest(req);
