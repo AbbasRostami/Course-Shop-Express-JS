@@ -98,7 +98,6 @@ export const cartService = {
   },
 
   // [LOGIC] Sync guest cart with user cart (merge after login)
-  // [LOGIC] Sync guest cart with user cart (merge after login)
   async syncCart(userId: string, data: SyncCartInput): Promise<void> {
     const { courseIds } = data;
 

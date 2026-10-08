@@ -81,6 +81,11 @@ const clearCartItems = async (userId: string, tx: Prisma.TransactionClient) => {
 
   if (cart) {
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+    await tx.cart.update({
+      where: { id: cart.id },
+      data: { discountCode: null },
+    });
   }
 };
 
