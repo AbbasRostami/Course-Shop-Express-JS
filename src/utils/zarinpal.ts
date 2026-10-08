@@ -79,7 +79,7 @@ export const requestPayment = async (
       body: JSON.stringify({
         merchant_id: MERCHANT_ID,
         amount: payload.amount,
-        currency: "IRR",
+        currency: "IRT",
         description: payload.description,
         callback_url: payload.callbackUrl,
         metadata: {

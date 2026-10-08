@@ -58,7 +58,11 @@ export const courseInclude = {
   _count: {
     select: {
       enrollments: true,
-      comments: true,
+      comments: {
+        where: {
+          status: "APPROVED",
+        },
+      },
     },
   },
 } satisfies Prisma.CourseInclude;

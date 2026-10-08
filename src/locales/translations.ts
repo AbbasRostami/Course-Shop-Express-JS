@@ -274,7 +274,7 @@ export const faTranslations = {
       pageNumber: "page باید عدد باشد",
       limitNumber: "limit باید عدد باشد",
       refineMessage:
-        "برای درصد مقدار باید بین ۱-۱۰۰ و برای مقدار حداقل ۱۰۰۰ ریال باشد",
+        "برای درصد مقدار باید بین ۱-۱۰۰ و برای مقدار حداقل ۱۰۰۰ تومان باشد",
       codeEmpty: "کد نمی‌تواند خالی باشد",
     },
   },
@@ -422,8 +422,8 @@ export const faTranslations = {
     validation: {
       amountType: "مبلغ باید عدد باشد",
       amountInt: "مبلغ باید عدد صحیح باشد",
-      amountMin: "حداقل مبلغ شارژ ۱۰،۰۰۰ ریال (۱،۰۰۰ تومان) است",
-      amountMax: "حداکثر مبلغ شارژ ۵۰۰،۰۰۰،۰۰۰ ریال (۵۰ میلیون تومان) است",
+      amountMin: "حداقل مبلغ شارژ ۱،۰۰۰ تومان است",
+      amountMax: "حداکثر مبلغ شارژ ۵۰ میلیون تومان است",
       pageNumber: "page باید عدد باشد",
       limitNumber: "limit باید عدد باشد",
       minBalanceNumber: "minBalance باید عدد باشد",
@@ -434,7 +434,7 @@ export const faTranslations = {
       endDateInvalid: "تاریخ پایان نامعتبر است",
     },
     description: {
-      charge: "شارژ کیف پول به مبلغ {{amount}} ریال",
+      charge: "شارژ کیف پول به مبلغ {{amount}} تومان",
       chargeSimple: "شارژ کیف پول",
     },
   },
@@ -469,7 +469,7 @@ export const faTranslations = {
       alreadyEnrolled: 'شما قبلاً دوره "{{title}}" را خریداری کرده‌اید',
       walletNotFound: "کیف پول یافت نشد. ابتدا کیف پول خود را شارژ کنید",
       insufficientBalance:
-        "موجودی کیف پول کافی نیست. موجودی: {{balance}} ریال — مبلغ سفارش: {{total}} ریال",
+        "موجودی کیف پول کافی نیست. موجودی: {{balance}} تومان — مبلغ سفارش: {{total}} تومان",
       backendUrlNotDefined: "BACKEND_URL در محیط تعریف نشده است",
       alreadyCancelled: "این سفارش قبلاً لغو شده است",
       cannotCancelPaid: "امکان لغو سفارش پرداخت شده وجود ندارد.",
@@ -800,7 +800,7 @@ export const enTranslations: typeof faTranslations = {
       pageNumber: "Page must be a number",
       limitNumber: "Limit must be a number",
       refineMessage:
-        "Percentage must be between 1-100, and Amount must be at least 1000 rials",
+        "Percentage must be between 1-100, and Amount must be at least 1000 Tomans",
       codeEmpty: "Code cannot be empty",
     },
   },
@@ -951,8 +951,8 @@ export const enTranslations: typeof faTranslations = {
     validation: {
       amountType: "Amount must be a number",
       amountInt: "Amount must be an integer",
-      amountMin: "Minimum charge amount is 10,000 Rials",
-      amountMax: "Maximum charge amount is 500,000,000 Rials",
+      amountMin: "Minimum charge amount is 1,000 Tomans",
+      amountMax: "Maximum charge amount is 50,000,000 Tomans",
       pageNumber: "Page must be a number",
       limitNumber: "Limit must be a number",
       minBalanceNumber: "minBalance must be a number",
@@ -963,7 +963,7 @@ export const enTranslations: typeof faTranslations = {
       endDateInvalid: "Invalid end date",
     },
     description: {
-      charge: "Wallet deposit of {{amount}} Rials",
+      charge: "Wallet deposit of {{amount}} Tomans",
       chargeSimple: "Wallet deposit",
     },
   },
@@ -999,7 +999,7 @@ export const enTranslations: typeof faTranslations = {
       alreadyEnrolled: 'You have already purchased the course "{{title}}"',
       walletNotFound: "Wallet not found. Please charge your wallet first",
       insufficientBalance:
-        "Insufficient wallet balance. Balance: {{balance}} Rials — Order amount: {{total}} Rials",
+        "Insufficient wallet balance. Balance: {{balance}} Tomans — Order amount: {{total}} Tomans",
       backendUrlNotDefined:
         "BACKEND_URL is not defined in environment variables",
       alreadyCancelled: "This order has already been cancelled",

@@ -46,7 +46,7 @@ export const discountSwagger = {
                     type: "integer",
                     example: 20,
                     description:
-                      "برای PERCENTAGE: 1-100، برای AMOUNT: حداقل 1000 ریال",
+                      "برای PERCENTAGE: 1-100، برای AMOUNT: حداقل 1000 تومان",
                   },
                   maxUses: {
                     type: "integer",

@@ -84,11 +84,11 @@ Creates a PENDING transaction and returns ZarinPal payment URL.
                 properties: {
                   amount: {
                     type: "integer",
-                    minimum: 10000,
-                    maximum: 500000000,
-                    example: 1000000,
+                    minimum: 1000,
+                    maximum: 50000000,
+                    example: 100000,
                     description:
-                      "مبلغ به ریال (حداقل 10,000 - حداکثر 500,000,000)",
+                      "مبلغ به تومان (حداقل 1,000 - حداکثر 50,000,000)",
                   },
                 },
               },
@@ -120,8 +120,8 @@ Creates a PENDING transaction and returns ZarinPal payment URL.
   - Must not be empty.
   - Must be a number.
   - Must be an integer.
-  - Minimum: 10,000 (ریال).
-  - Maximum: 500,000,000 (ریال).`,
+  - Minimum: 1,000 (تومان). 
+  - Maximum: 50,000,000 (تومان). `,
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           500: {
