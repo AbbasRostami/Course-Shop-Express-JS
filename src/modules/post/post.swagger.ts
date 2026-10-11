@@ -12,15 +12,27 @@ export const postSwagger = {
             in: "header",
             schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          { name: "page", in: "query", schema: { type: "string", example: "1" } },
-          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "10" },
+          },
           {
             name: "category",
             in: "query",
             schema: { type: "string" },
             description: "Category slug (Fa or En)",
           },
-          { name: "search", in: "query", schema: { type: "string", example: "react" } },
+          {
+            name: "search",
+            in: "query",
+            schema: { type: "string", example: "react" },
+          },
           {
             name: "sortBy",
             in: "query",
@@ -364,6 +376,64 @@ export const postSwagger = {
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Access denied: Admin only." },
+          404: { description: "Post not found." },
+        },
+      },
+    },
+
+    "/api/posts/admin/{idOrSlug}": {
+      get: {
+        tags: ["Post"],
+        summary: "Get single post details for Admin (including drafts)",
+        description:
+          "Returns full details of any blog post by ID or Slug (Fa/En), even if unpublished or in draft status.",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+          {
+            name: "idOrSlug",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "Post ID (UUID) or Slug (Fa or En)",
+            example: "react-vs-vue",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Post details retrieved successfully.",
+            content: {
+              "application/json": {
+                example: {
+                  status: "success",
+                  data: {
+                    post: {
+                      id: "post-uuid",
+                      title: "مقایسه React و Vue",
+                      slug: "react-vs-vue",
+                      content: "<p>در این مقاله...</p>",
+                      imageUrl: "/uploads/posts/post-uuid.jpg",
+                      published: false,
+                      category: {
+                        id: "cat-uuid",
+                        name: "فرانت‌اند",
+                        slug: "frontend",
+                      },
+                      stats: { comments: 0 },
+                      createdAt: "2026-01-10T12:00:00.000Z",
+                      updatedAt: "2026-01-10T12:00:00.000Z",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized: Invalid or expired token." },
+          403: { description: "Forbidden: Admin access required." },
           404: { description: "Post not found." },
         },
       },

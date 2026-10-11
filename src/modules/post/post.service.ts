@@ -20,10 +20,7 @@ import {
   PostWithStats,
   UpdatePostInputWithImage,
 } from "./post.types.js";
-import {
-  ListPostsAdminQuery,
-  ListPostsPublicQuery,
-} from "./post.validator.js";
+import { ListPostsAdminQuery, ListPostsPublicQuery } from "./post.validator.js";
 
 // [UTIL] Format post - replace _count with stats
 const formatPost = (post: PostWithRelations): PostWithStats => {
@@ -198,7 +195,9 @@ export const postService = {
 
     if (existing.published === published) {
       throw new AppError(
-        published ? "post.errors.alreadyPublished" : "post.errors.alreadyHidden",
+        published
+          ? "post.errors.alreadyPublished"
+          : "post.errors.alreadyHidden",
         400,
       );
     }
@@ -282,10 +281,7 @@ export const postService = {
 
     if (query.category) {
       where.category = {
-        OR: [
-          { slugFa: query.category },
-          { slugEn: query.category },
-        ],
+        OR: [{ slugFa: query.category }, { slugEn: query.category }],
         show: true,
       };
     }
@@ -372,5 +368,21 @@ export const postService = {
     };
 
     return await addFavoriteInfo(postWithReactions, userId);
+  },
+
+  // [DB] Get single post for admin by ID or Slug (including unpublished/draft)
+  async getAdminPostByIdOrSlug(idOrSlug: string) {
+    const post = await prisma.post.findFirst({
+      where: {
+        OR: [{ id: idOrSlug }, { slugFa: idOrSlug }, { slugEn: idOrSlug }],
+      },
+      include: postInclude,
+    });
+
+    if (!post) {
+      throw new AppError("post.errors.notFound", 404);
+    }
+
+    return formatPost(post);
   },
 };

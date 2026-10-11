@@ -121,3 +121,16 @@ export const getPostBySlugController: RequestHandler = async (req, res) => {
     },
   });
 };
+
+// [GET] Get post by slug for ADMIN
+export const getAdminPostByIdOrSlugController: RequestHandler = async (req, res) => {
+  const idOrSlug = req.params.idOrSlug as string;
+  const post = await postService.getAdminPostByIdOrSlug(idOrSlug);
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      post: localizePayload(post, req.locale),
+    },
+  });
+};

@@ -9,6 +9,7 @@ import { toggleReactionSchema } from "../reaction/reaction.validator.js";
 import {
   createPostController,
   deletePostController,
+  getAdminPostByIdOrSlugController,
   getAdminPostsController,
   getPostBySlugController,
   getPublicPostsController,
@@ -54,6 +55,14 @@ router.put(
   uploadPostImage,
   validate(updatePostSchema),
   asyncHandler(updatePostController),
+);
+
+// [GET] Admin get single post by ID or Slug
+router.get(
+  "/admin/:idOrSlug",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminPostByIdOrSlugController)
 );
 
 // [PATCH] Toggle post publish status
