@@ -12,8 +12,16 @@ export const courseSwagger = {
             in: "header",
             schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          { name: "page", in: "query", schema: { type: "string", example: "1" } },
-          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "10" },
+          },
           {
             name: "categories",
             in: "query",
@@ -480,6 +488,72 @@ export const courseSwagger = {
                 example: {
                   status: "success",
                   data: { message: "دوره با موفقیت حذف شد" },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized: Invalid or expired token." },
+          403: { description: "Forbidden: Admin access required." },
+          404: { description: "Course not found." },
+        },
+      },
+    },
+
+    "/api/courses/admin/{idOrSlug}": {
+      get: {
+        tags: ["Course"],
+        summary: "Get single course details for Admin (including drafts)",
+        description:
+          "Returns full details of any course by ID or Slug (Fa/En), even if unpublished or in draft status.",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "Accept-Language",
+            in: "header",
+            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+          },
+          {
+            name: "idOrSlug",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "Course ID (UUID) or Slug (Fa or En)",
+            example: "d3b07384-d113-4956-a5cc-484443028456",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Course details retrieved successfully.",
+            content: {
+              "application/json": {
+                example: {
+                  status: "success",
+                  data: {
+                    course: {
+                      id: "d3b07384-d113-4956-a5cc-484443028456",
+                      title: "آموزش React پیشرفته",
+                      slug: "آموزش-react-پیشرفته",
+                      description: "یادگیری کامل React با Next.js",
+                      price: 5000000,
+                      imageUrl: "/uploads/courses/course-uuid.jpg",
+                      level: "INTERMEDIATE",
+                      published: false,
+                      createdAt: "2026-01-15T14:00:00.000Z",
+                      updatedAt: "2026-01-15T14:00:00.000Z",
+                      category: {
+                        id: "cat-uuid",
+                        name: "فرانت‌اند",
+                        slug: "فرانت-اند",
+                      },
+                      teacher: {
+                        id: "teacher-uuid",
+                        name: "عباس رستمی",
+                        slug: "abbas-rostami",
+                        avatar: null,
+                      },
+                      stats: { enrollments: 0, comments: 0 },
+                    },
+                  },
                 },
               },
             },

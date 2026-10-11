@@ -9,6 +9,7 @@ import { toggleReactionSchema } from "../reaction/reaction.validator.js";
 import {
   createCourseController,
   deleteCourseController,
+  getAdminCourseByIdOrSlugController,
   getAdminCoursesController,
   getCourseBySlugController,
   getPublicCoursesController,
@@ -53,6 +54,14 @@ router.post(
   uploadCourseImage,
   validate(createCourseSchema),
   asyncHandler(createCourseController),
+);
+
+// [GET] Admin get single course by ID or Slug
+router.get(
+  "/admin/:idOrSlug",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminCourseByIdOrSlugController),
 );
 
 // [PUT] Update course with optional image upload

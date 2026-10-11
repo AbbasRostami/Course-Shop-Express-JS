@@ -151,3 +151,19 @@ export const getCourseBySlugController: RequestHandler = async (req, res) => {
     },
   });
 };
+
+// [GET] Admin get single course by ID or Slug
+export const getAdminCourseByIdOrSlugController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const idOrSlug = req.params.idOrSlug as string;
+  const course = await courseService.getAdminCourseByIdOrSlug(idOrSlug);
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      course: localizePayload(course, req.locale),
+    },
+  });
+};

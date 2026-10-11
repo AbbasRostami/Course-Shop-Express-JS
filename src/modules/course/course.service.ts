@@ -426,4 +426,20 @@ export const courseService = {
       isFavorite: !!favorite,
     };
   },
+
+  // [DB] Get single course for admin by ID or Slug (including unpublished/draft)
+  async getAdminCourseByIdOrSlug(idOrSlug: string) {
+    const course = await prisma.course.findFirst({
+      where: {
+        OR: [{ id: idOrSlug }, { slugFa: idOrSlug }, { slugEn: idOrSlug }],
+      },
+      include: courseInclude,
+    });
+
+    if (!course) {
+      throw new AppError("course.errors.notFound", 404);
+    }
+
+    return formatCourse(course);
+  },
 };
