@@ -502,16 +502,11 @@ export const courseSwagger = {
     "/api/courses/admin/{idOrSlug}": {
       get: {
         tags: ["Course"],
-        summary: "Get single course details for Admin (including drafts)",
+        summary: "Get single course details for (Admin)",
         description:
-          "Returns full details of any course by ID or Slug (Fa/En), even if unpublished or in draft status.",
+          "Returns full details of any course by ID or Slug with raw bilingual fields (titleFa, titleEn, descriptionFa, descriptionEn).",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
-          {
-            name: "Accept-Language",
-            in: "header",
-            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
-          },
           {
             name: "idOrSlug",
             in: "path",
@@ -531,9 +526,12 @@ export const courseSwagger = {
                   data: {
                     course: {
                       id: "d3b07384-d113-4956-a5cc-484443028456",
-                      title: "آموزش React پیشرفته",
-                      slug: "آموزش-react-پیشرفته",
-                      description: "یادگیری کامل React با Next.js",
+                      titleFa: "آموزش React پیشرفته",
+                      titleEn: "Advanced React Course",
+                      slugFa: "آموزش-react-پیشرفته",
+                      slugEn: "advanced-react-course",
+                      descriptionFa: "یادگیری کامل React با Next.js",
+                      descriptionEn: "Complete guide to React with Next.js",
                       price: 5000000,
                       imageUrl: "/uploads/courses/course-uuid.jpg",
                       level: "INTERMEDIATE",
@@ -542,13 +540,17 @@ export const courseSwagger = {
                       updatedAt: "2026-01-15T14:00:00.000Z",
                       category: {
                         id: "cat-uuid",
-                        name: "فرانت‌اند",
-                        slug: "فرانت-اند",
+                        nameFa: "فرانت‌اند",
+                        nameEn: "Frontend",
+                        slugFa: "فرانت-اند",
+                        slugEn: "frontend",
                       },
                       teacher: {
                         id: "teacher-uuid",
-                        name: "عباس رستمی",
-                        slug: "abbas-rostami",
+                        nameFa: "عباس رستمی",
+                        nameEn: "Abbas Rostami",
+                        slugFa: "abbas-rostami",
+                        slugEn: "abbas-rostami",
                         avatar: null,
                       },
                       stats: { enrollments: 0, comments: 0 },

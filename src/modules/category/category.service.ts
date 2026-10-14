@@ -236,4 +236,18 @@ export const categoryService = {
 
     await prisma.category.delete({ where: { id } });
   },
+
+  // [DB] Get single category by ID for admin (including hidden & raw bilingual fields)
+  async getAdminCategoryById(id: string) {
+    const category = await prisma.category.findUnique({
+      where: { id },
+      include: categoryWithCount,
+    });
+
+    if (!category) {
+      throw new AppError("category.errors.notFound", 404);
+    }
+
+    return category;
+  },
 };

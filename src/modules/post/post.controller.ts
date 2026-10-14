@@ -2,10 +2,7 @@ import { RequestHandler } from "express";
 import { getUserIdFromRequest } from "../../utils/getUserIdFromRequest.js";
 import { localizePayload } from "../../utils/localize.js";
 import { postService } from "./post.service.js";
-import {
-  ListPostsAdminQuery,
-  ListPostsPublicQuery,
-} from "./post.validator.js";
+import { ListPostsAdminQuery, ListPostsPublicQuery } from "./post.validator.js";
 
 // [POST] Create post
 export const createPostController: RequestHandler = async (req, res) => {
@@ -122,15 +119,18 @@ export const getPostBySlugController: RequestHandler = async (req, res) => {
   });
 };
 
-// [GET] Get post by slug for ADMIN
-export const getAdminPostByIdOrSlugController: RequestHandler = async (req, res) => {
+// [GET] Admin get single post by ID or Slug
+export const getAdminPostByIdOrSlugController: RequestHandler = async (
+  req,
+  res,
+) => {
   const idOrSlug = req.params.idOrSlug as string;
   const post = await postService.getAdminPostByIdOrSlug(idOrSlug);
 
   return res.status(200).json({
     status: "success",
     data: {
-      post: localizePayload(post, req.locale),
+      post,
     },
   });
 };

@@ -201,6 +201,53 @@ export const teacherSwagger = {
       },
     },
 
+    "/api/teachers/admin/{id}": {
+      get: {
+        tags: ["Teacher"],
+        summary: "Get single teacher details (Admin)",
+        description:
+          "Returns full details of any teacher by ID with raw bilingual fields (nameFa, nameEn, bioFa, bioEn).",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+            description: "Teacher ID (UUID)",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Teacher details retrieved successfully.",
+            content: {
+              "application/json": {
+                example: {
+                  status: "success",
+                  data: {
+                    teacher: {
+                      id: "teacher-uuid",
+                      nameFa: "عباس رستمی",
+                      nameEn: "Abbas Rostami",
+                      slugFa: "abbas-rostami",
+                      slugEn: "abbas-rostami",
+                      bioFa: "توسعه‌دهنده...",
+                      bioEn: "Developer...",
+                      avatar: "https://...",
+                      show: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized: Invalid or expired token." },
+          403: { description: "Forbidden: Admin access required." },
+          404: { description: "Teacher not found." },
+        },
+      },
+    },
+
     "/api/teachers/{slug}": {
       get: {
         tags: ["Teacher"],

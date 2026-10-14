@@ -104,3 +104,19 @@ export const deleteCategoryController: RequestHandler = async (req, res) => {
     data: { message: req.t("category.success.deleted") },
   });
 };
+
+// [GET] Admin get single category by ID
+export const getAdminCategoryByIdController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const id = req.params.id as string;
+  const category = await categoryService.getAdminCategoryById(id);
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      category: category,
+    },
+  });
+};

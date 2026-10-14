@@ -7,6 +7,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
   createTeacherController,
   deleteTeacherController,
+  getAdminTeacherByIdController,
   getAdminTeachersController,
   getTeacherBySlugController,
   getTeachersController,
@@ -32,6 +33,14 @@ router.get(
   authorize("ADMIN"),
   validate(listTeachersAdminSchema),
   asyncHandler(getAdminTeachersController),
+);
+
+// [GET] Admin get single teacher by ID
+router.get(
+  "/admin/:id",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminTeacherByIdController),
 );
 
 // [PATCH] Toggle teacher visibility

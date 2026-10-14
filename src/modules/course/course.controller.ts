@@ -163,7 +163,7 @@ export const getAdminCourseByIdOrSlugController: RequestHandler = async (
   return res.status(200).json({
     status: "success",
     data: {
-      course: localizePayload(course, req.locale),
+      course: course,
     },
   });
 };

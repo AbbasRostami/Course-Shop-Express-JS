@@ -62,7 +62,7 @@ router.get(
   "/admin/:idOrSlug",
   authentication,
   authorize("ADMIN"),
-  asyncHandler(getAdminPostByIdOrSlugController)
+  asyncHandler(getAdminPostByIdOrSlugController),
 );
 
 // [PATCH] Toggle post publish status

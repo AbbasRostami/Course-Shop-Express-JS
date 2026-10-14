@@ -334,4 +334,18 @@ export const teacherService = {
       })),
     };
   },
+
+  // [DB] Get single teacher by ID for admin (including raw bilingual fields & hidden teachers)
+  async getAdminTeacherById(id: string) {
+    const teacher = await prisma.teacher.findUnique({
+      where: { id },
+      select: teacherSelect,
+    });
+
+    if (!teacher) {
+      throw new AppError("teacher.errors.notFound", 404);
+    }
+
+    return teacher;
+  },
 };

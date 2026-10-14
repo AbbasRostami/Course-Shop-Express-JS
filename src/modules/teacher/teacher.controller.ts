@@ -138,3 +138,19 @@ export const getTeacherBySlugController: RequestHandler = async (req, res) => {
     },
   });
 };
+
+// [GET] Admin get single teacher by ID
+export const getAdminTeacherByIdController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const id = req.params.id as string;
+  const teacher = await teacherService.getAdminTeacherById(id);
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      teacher,
+    },
+  });
+};

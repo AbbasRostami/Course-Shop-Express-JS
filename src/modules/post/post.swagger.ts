@@ -291,109 +291,14 @@ export const postSwagger = {
       },
     },
 
-    "/api/posts/{id}": {
-      put: {
-        tags: ["Post"],
-        summary: "Update a post (Admin)",
-        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
-        requestBody: {
-          content: {
-            "multipart/form-data": {
-              schema: {
-                type: "object",
-                properties: {
-                  titleFa: { type: "string", minLength: 3, maxLength: 200 },
-                  titleEn: { type: "string", minLength: 3, maxLength: 200 },
-                  contentFa: { type: "string" },
-                  contentEn: { type: "string" },
-                  categoryId: { type: "string", format: "uuid" },
-                  published: { type: "boolean" },
-                  image: { type: "string", format: "binary" },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: "Post updated successfully.",
-            content: {
-              "application/json": {
-                example: {
-                  status: "success",
-                  data: { message: "پست با موفقیت ویرایش شد" },
-                },
-              },
-            },
-          },
-          400: {
-            description: `Invalid request - Validation rules:
-
-- id (path): Must be a valid UUID v4.
-- titleFa/titleEn: Optional. Min 3, Max 200.
-- contentFa/contentEn: Optional. Min 10, Max 100,000.
-- categoryId: Optional UUID.
-- published: Optional boolean.
-- image: Optional. Max 5 MB.
-- At least one field required.`,
-          },
-          401: { description: "Unauthorized: Invalid or expired token." },
-          403: { description: "Access denied: Admin only." },
-          404: { description: "Post not found." },
-        },
-      },
-      delete: {
-        tags: ["Post"],
-        summary: "Delete a post (Admin)",
-        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
-        responses: {
-          200: {
-            description: "Post deleted successfully.",
-            content: {
-              "application/json": {
-                example: {
-                  status: "success",
-                  data: { message: "پست با موفقیت حذف شد" },
-                },
-              },
-            },
-          },
-          401: { description: "Unauthorized: Invalid or expired token." },
-          403: { description: "Access denied: Admin only." },
-          404: { description: "Post not found." },
-        },
-      },
-    },
-
     "/api/posts/admin/{idOrSlug}": {
       get: {
         tags: ["Post"],
         summary: "Get single post details for Admin (including drafts)",
         description:
-          "Returns full details of any blog post by ID or Slug (Fa/En), even if unpublished or in draft status.",
+          "Returns full details of any blog post by ID or Slug (Fa/En) with raw bilingual fields (titleFa, titleEn, contentFa, contentEn) for editing.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
-          {
-            name: "Accept-Language",
-            in: "header",
-            schema: { type: "string", enum: ["fa", "en"], default: "fa" },
-          },
           {
             name: "idOrSlug",
             in: "path",
@@ -413,15 +318,20 @@ export const postSwagger = {
                   data: {
                     post: {
                       id: "post-uuid",
-                      title: "مقایسه React و Vue",
-                      slug: "react-vs-vue",
-                      content: "<p>در این مقاله...</p>",
+                      titleFa: "مقایسه React و Vue",
+                      titleEn: "React vs Vue Comparison",
+                      slugFa: "react-vs-vue-fa",
+                      slugEn: "react-vs-vue",
+                      contentFa: "<p>در این مقاله...</p>",
+                      contentEn: "<p>In this article...</p>",
                       imageUrl: "/uploads/posts/post-uuid.jpg",
                       published: false,
                       category: {
                         id: "cat-uuid",
-                        name: "فرانت‌اند",
-                        slug: "frontend",
+                        nameFa: "فرانت‌اند",
+                        nameEn: "Frontend",
+                        slugFa: "frontend",
+                        slugEn: "frontend",
                       },
                       stats: { comments: 0 },
                       createdAt: "2026-01-10T12:00:00.000Z",
@@ -433,7 +343,7 @@ export const postSwagger = {
             },
           },
           401: { description: "Unauthorized: Invalid or expired token." },
-          403: { description: "Forbidden: Admin access required." },
+          403: { description: "Access denied: Admin only." },
           404: { description: "Post not found." },
         },
       },

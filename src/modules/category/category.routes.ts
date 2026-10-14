@@ -7,6 +7,7 @@ import {
   createCategoryController,
   deleteCategoryController,
   getAdminCategoriesController,
+  getAdminCategoryByIdController, // <-- این را اضافه کنید
   getCategoryBySlugController,
   getPublicCategoriesController,
   toggleVisibilityController,
@@ -30,6 +31,14 @@ router.get(
   authorize("ADMIN"),
   validate(listCategoriesAdminSchema),
   asyncHandler(getAdminCategoriesController),
+);
+
+// [GET] Admin get single category by ID
+router.get(
+  "/admin/:id",
+  authentication,
+  authorize("ADMIN"),
+  asyncHandler(getAdminCategoryByIdController),
 );
 
 // [PATCH] Toggle category visibility

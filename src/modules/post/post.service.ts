@@ -370,7 +370,7 @@ export const postService = {
     return await addFavoriteInfo(postWithReactions, userId);
   },
 
-  // [DB] Get single post for admin by ID or Slug (including unpublished/draft)
+  // [DB] Get single post for admin by ID or Slug (including drafts & raw bilingual fields)
   async getAdminPostByIdOrSlug(idOrSlug: string) {
     const post = await prisma.post.findFirst({
       where: {
@@ -383,6 +383,12 @@ export const postService = {
       throw new AppError("post.errors.notFound", 404);
     }
 
-    return formatPost(post);
+    const { _count, categoryId, ...rest } = post;
+    return {
+      ...rest,
+      stats: {
+        comments: _count.comments,
+      },
+    };
   },
 };

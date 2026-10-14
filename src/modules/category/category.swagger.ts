@@ -203,6 +203,56 @@ export const categorySwagger = {
       },
     },
 
+    "/api/categories/admin/{id}": {
+      get: {
+        tags: ["Category"],
+        summary: "Get single category details for (Admin)",
+        description:
+          "Returns full details of any category by ID with raw bilingual fields (nameFa, nameEn, descriptionFa, descriptionEn).",
+        security: [{ CookieAuth: [] }, { BearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+            description: "Category ID (UUID)",
+            example: "d3b07384-d113-4956-a5cc-484443028456",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Category details retrieved successfully.",
+            content: {
+              "application/json": {
+                example: {
+                  status: "success",
+                  data: {
+                    category: {
+                      id: "d3b07384-d113-4956-a5cc-484443028456",
+                      nameFa: "فرانت‌اند",
+                      nameEn: "Frontend",
+                      slugFa: "فرانت-اند",
+                      slugEn: "frontend",
+                      descriptionFa: "آموزش‌های توسعه فرانت‌اند",
+                      descriptionEn: "Frontend development tutorials",
+                      show: true,
+                      createdAt: "2026-01-15T14:00:00.000Z",
+                      updatedAt: "2026-01-15T14:00:00.000Z",
+                      _count: { courses: 5, posts: 2 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "Unauthorized: Invalid or expired token." },
+          403: { description: "Forbidden: Admin access required." },
+          404: { description: "Category not found." },
+        },
+      },
+    },
+
     "/api/categories/{slug}": {
       get: {
         tags: ["Category"],
