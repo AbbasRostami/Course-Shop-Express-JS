@@ -30,6 +30,11 @@ export const faTranslations = {
       invalidResetRequest: "درخواست بازیابی معتبر نیست",
       expiredResetCode: "کد بازیابی منقضی شده است، دوباره درخواست دهید",
       incorrectResetCode: "کد بازیابی اشتباه است",
+
+      forbiddenSuperAdmin:
+        "این عملیات نیاز به دسترسی سوپر ادمین دارد. حساب شما در حالت نمایشی (مشاهده) است.",
+      demoReadOnly:
+        "شما در حالت دمو (فقط مشاهده) هستید. برای تست کامل، لطفاً از حساب سوپر ادمین استفاده کنید.",
     },
     success: {
       otpSent: "کد تایید به ایمیل شما ارسال شد",
@@ -552,6 +557,11 @@ export const enTranslations: typeof faTranslations = {
       invalidResetRequest: "Invalid reset request",
       expiredResetCode: "Reset code has expired, please request again",
       incorrectResetCode: "Reset code is incorrect",
+
+      forbiddenSuperAdmin:
+        "This action requires SUPER_ADMIN access. Your account is in demo (read-only) mode.",
+      demoReadOnly:
+        "You are in demo (read-only) mode. For full testing, please use the SUPER_ADMIN account.",
     },
     success: {
       otpSent: "Verification code has been sent to your email",
