@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
@@ -18,12 +21,13 @@ import {
 
 const router = Router();
 
-// [MW] All discount routes require admin auth
-router.use(authentication, authorize("ADMIN"));
+// [MW] All discount routes require auth
+router.use(authentication);
 
 // [POST] Create discount code
 router.post(
   "/",
+  authorizeSuperAdmin(),
   validate(createDiscountSchema),
   asyncHandler(createDiscountController),
 );
@@ -31,6 +35,7 @@ router.post(
 // [GET] List discount codes
 router.get(
   "/",
+  authorizeAdmins(),
   validate(listDiscountsSchema),
   asyncHandler(listDiscountsController),
 );
@@ -38,6 +43,7 @@ router.get(
 // [PATCH] Toggle discount active status
 router.patch(
   "/:id/toggle",
+  authorizeSuperAdmin(),
   validate(toggleDiscountSchema),
   asyncHandler(toggleDiscountController),
 );
@@ -45,6 +51,7 @@ router.patch(
 // [DELETE] Delete discount code
 router.delete(
   "/:id",
+  authorizeSuperAdmin(),
   validate(deleteDiscountSchema),
   asyncHandler(deleteDiscountController),
 );

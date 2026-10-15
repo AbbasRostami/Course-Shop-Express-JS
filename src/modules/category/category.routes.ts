@@ -1,13 +1,16 @@
 import { Router } from "express";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
   createCategoryController,
   deleteCategoryController,
   getAdminCategoriesController,
-  getAdminCategoryByIdController, // <-- این را اضافه کنید
+  getAdminCategoryByIdController,
   getCategoryBySlugController,
   getPublicCategoriesController,
   toggleVisibilityController,
@@ -28,7 +31,7 @@ const router = Router();
 router.get(
   "/admin",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listCategoriesAdminSchema),
   asyncHandler(getAdminCategoriesController),
 );
@@ -37,7 +40,7 @@ router.get(
 router.get(
   "/admin/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminCategoryByIdController),
 );
 
@@ -45,7 +48,7 @@ router.get(
 router.patch(
   "/:id/visibility",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(toggleVisibilitySchema),
   asyncHandler(toggleVisibilityController),
 );
@@ -54,7 +57,7 @@ router.patch(
 router.post(
   "/",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(createCategorySchema),
   asyncHandler(createCategoryController),
 );
@@ -63,7 +66,7 @@ router.post(
 router.put(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(updateCategorySchema),
   asyncHandler(updateCategoryController),
 );
@@ -72,7 +75,7 @@ router.put(
 router.delete(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(deleteCategorySchema),
   asyncHandler(deleteCategoryController),
 );

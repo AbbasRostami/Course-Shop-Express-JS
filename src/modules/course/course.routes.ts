@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { uploadCourseImage } from "../../config/multer.js";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { toggleCourseReaction } from "../reaction/reaction.controller.js";
@@ -32,7 +35,7 @@ const router = Router();
 router.get(
   "/admin",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listCoursesAdminSchema),
   asyncHandler(getAdminCoursesController),
 );
@@ -41,7 +44,7 @@ router.get(
 router.patch(
   "/:id/publish",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(togglePublishSchema),
   asyncHandler(togglePublishController),
 );
@@ -50,7 +53,7 @@ router.patch(
 router.post(
   "/",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   uploadCourseImage,
   validate(createCourseSchema),
   asyncHandler(createCourseController),
@@ -60,7 +63,7 @@ router.post(
 router.get(
   "/admin/:idOrSlug",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminCourseByIdOrSlugController),
 );
 
@@ -68,7 +71,7 @@ router.get(
 router.put(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   uploadCourseImage,
   validate(updateCourseSchema),
   asyncHandler(updateCourseController),
@@ -78,7 +81,7 @@ router.put(
 router.delete(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(deleteCourseSchema),
   asyncHandler(deleteCourseController),
 );

@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
@@ -33,7 +36,7 @@ router.use(authentication);
 // [GET] Admin list orders
 router.get(
   "/admin",
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listAdminOrdersSchema),
   asyncHandler(getAdminOrdersController),
 );
@@ -41,7 +44,7 @@ router.get(
 // [GET] Admin get single order
 router.get(
   "/admin/:id",
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(getAdminOrderSchema),
   asyncHandler(getAdminOrderController),
 );
@@ -72,7 +75,7 @@ router.patch(
 // [PATCH] Admin cancel order
 router.patch(
   "/admin/:id/cancel",
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(getAdminOrderSchema),
   asyncHandler(adminCancelOrderController),
 );

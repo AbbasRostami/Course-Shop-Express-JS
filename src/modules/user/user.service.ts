@@ -271,42 +271,27 @@ export const userService = {
   },
 
   // [DB] Admin ban user and invalidate session
-  async banUser(id: string, currentUserId: string) {
-    // [LOGIC] Block self-ban
-    if (id === currentUserId) {
+  async banUser(targetUserId: string, currentUserId: string) {
+    if (targetUserId === currentUserId) {
       throw new AppError("user.errors.cannotBanSelf", 400);
     }
 
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, role: true, isBanned: true },
+    });
 
     if (!user) {
       throw new AppError("user.errors.notFound", 404);
     }
 
-    // [LOGIC] Block banning admin
-    if (user.role === "ADMIN") {
+    if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
       throw new AppError("user.errors.cannotBanAdmin", 409);
     }
 
     if (user.isBanned) {
       throw new AppError("user.errors.alreadyBanned", 422);
     }
-
-    return prisma.user.update({
-      where: { id },
-      data: {
-        isBanned: true,
-        bannedAt: new Date(),
-        refreshToken: null,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        isBanned: true,
-        bannedAt: true,
-      },
-    });
   },
 
   // [DB] Admin unban user

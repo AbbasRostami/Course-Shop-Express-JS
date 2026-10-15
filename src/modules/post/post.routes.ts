@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { uploadPostImage } from "../../config/multer.js";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { togglePostReaction } from "../reaction/reaction.controller.js";
@@ -32,7 +35,7 @@ const router = Router();
 router.get(
   "/admin",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listPostsAdminSchema),
   asyncHandler(getAdminPostsController),
 );
@@ -41,7 +44,7 @@ router.get(
 router.post(
   "/",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   uploadPostImage,
   validate(createPostSchema),
   asyncHandler(createPostController),
@@ -51,7 +54,7 @@ router.post(
 router.put(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   uploadPostImage,
   validate(updatePostSchema),
   asyncHandler(updatePostController),
@@ -61,7 +64,7 @@ router.put(
 router.get(
   "/admin/:idOrSlug",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminPostByIdOrSlugController),
 );
 
@@ -69,7 +72,7 @@ router.get(
 router.patch(
   "/:id/publish",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(togglePublishPostSchema),
   asyncHandler(togglePublishPostController),
 );
@@ -78,7 +81,7 @@ router.patch(
 router.delete(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(deletePostSchema),
   asyncHandler(deletePostController),
 );

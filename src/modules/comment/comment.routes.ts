@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import { authorizeAdmins } from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { toggleCommentReaction } from "../reaction/reaction.controller.js";
@@ -61,7 +61,7 @@ router.get(
 router.get(
   "/admin",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listAdminCommentsSchema),
   asyncHandler(getAdminCommentsController),
 );
@@ -86,7 +86,7 @@ router.post(
 router.patch(
   "/:id/approve",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(moderateCommentSchema),
   asyncHandler(approveCommentController),
 );
@@ -95,7 +95,7 @@ router.patch(
 router.patch(
   "/:id/reject",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(moderateCommentSchema),
   asyncHandler(rejectCommentController),
 );

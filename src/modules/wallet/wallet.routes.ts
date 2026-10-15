@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import { authorizeAdmins } from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
@@ -24,7 +24,7 @@ const router = Router();
 router.get(
   "/admin/wallets",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listWalletsAdminSchema),
   asyncHandler(getAllWalletsController),
 );
@@ -33,7 +33,7 @@ router.get(
 router.get(
   "/admin/transactions",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listAdminTransactionsSchema),
   asyncHandler(getAllTransactionsController),
 );

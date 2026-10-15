@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { uploadTeacherAvatar } from "../../config/multer.js";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
@@ -30,7 +33,7 @@ const router = Router();
 router.get(
   "/admin",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listTeachersAdminSchema),
   asyncHandler(getAdminTeachersController),
 );
@@ -39,7 +42,7 @@ router.get(
 router.get(
   "/admin/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminTeacherByIdController),
 );
 
@@ -47,7 +50,7 @@ router.get(
 router.patch(
   "/:id/visibility",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(toggleTeacherVisibilitySchema),
   asyncHandler(toggleTeacherVisibilityController),
 );
@@ -56,7 +59,7 @@ router.patch(
 router.post(
   "/",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   uploadTeacherAvatar,
   validate(createTeacherSchema),
   asyncHandler(createTeacherController),
@@ -66,7 +69,7 @@ router.post(
 router.put(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   uploadTeacherAvatar,
   validate(updateTeacherSchema),
   asyncHandler(updateTeacherController),
@@ -76,7 +79,7 @@ router.put(
 router.delete(
   "/:id",
   authentication,
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(deleteTeacherSchema),
   asyncHandler(deleteTeacherController),
 );

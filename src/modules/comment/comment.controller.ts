@@ -125,7 +125,9 @@ export const rejectCommentController: RequestHandler = async (req, res) => {
 export const deleteCommentController: RequestHandler = async (req, res) => {
   const commentId = req.params.id as string;
   const userId = req.user!.id;
-  const isAdmin = req.user!.role === "ADMIN";
+
+  const isAdmin =
+    req.user!.role === "ADMIN" || req.user!.role === "SUPER_ADMIN";
 
   await commentService.deleteComment(commentId, userId, isAdmin);
 

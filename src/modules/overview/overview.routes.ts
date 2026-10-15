@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import { authorizeAdmins } from "../../middlewares/authorization.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
   getAdminCommentStatsController,
@@ -20,7 +20,7 @@ const router = Router();
 router.get(
   "/admin",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminOverviewController),
 );
 
@@ -28,7 +28,7 @@ router.get(
 router.get(
   "/admin/users",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminUserStatsController),
 );
 
@@ -36,7 +36,7 @@ router.get(
 router.get(
   "/admin/courses",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminCourseStatsController),
 );
 
@@ -44,7 +44,7 @@ router.get(
 router.get(
   "/admin/orders",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminOrderStatsController),
 );
 
@@ -52,7 +52,7 @@ router.get(
 router.get(
   "/admin/revenue",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminRevenueStatsController),
 );
 
@@ -60,7 +60,7 @@ router.get(
 router.get(
   "/admin/discounts",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminDiscountStatsController),
 );
 
@@ -68,7 +68,7 @@ router.get(
 router.get(
   "/admin/comments",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminCommentStatsController),
 );
 
@@ -76,7 +76,7 @@ router.get(
 router.get(
   "/admin/posts",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminPostStatsController),
 );
 
@@ -84,7 +84,7 @@ router.get(
 router.get(
   "/admin/enrollments",
   authentication,
-  authorize("ADMIN"),
+  authorizeAdmins(),
   asyncHandler(getAdminEnrollmentStatsController),
 );
 

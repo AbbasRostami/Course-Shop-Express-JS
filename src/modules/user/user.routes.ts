@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { uploadAvatar } from "../../config/multer.js";
 import { authentication } from "../../middlewares/authentication.js";
-import { authorize } from "../../middlewares/authorization.js";
+import {
+  authorizeAdmins,
+  authorizeSuperAdmin,
+} from "../../middlewares/authorization.js";
 import { validate } from "../../middlewares/validate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {
@@ -48,7 +51,7 @@ router.delete("/profile/avatar", asyncHandler(deleteAvatarController));
 // [GET] Admin list users
 router.get(
   "/",
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listUsersSchema),
   asyncHandler(getUsersController),
 );
@@ -56,7 +59,7 @@ router.get(
 // [GET] Admin list banned users
 router.get(
   "/blacklist",
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(listBannedUsersSchema),
   asyncHandler(getBannedUsersController),
 );
@@ -64,7 +67,7 @@ router.get(
 // [GET] Admin get user by ID
 router.get(
   "/:id",
-  authorize("ADMIN"),
+  authorizeAdmins(),
   validate(getUserByIdSchema),
   asyncHandler(getUserByIdController),
 );
@@ -72,7 +75,7 @@ router.get(
 // [POST] Admin ban user
 router.post(
   "/:id/ban",
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(banUserSchema),
   asyncHandler(banUserController),
 );
@@ -80,7 +83,7 @@ router.post(
 // [DELETE] Admin unban user
 router.delete(
   "/:id/ban",
-  authorize("ADMIN"),
+  authorizeSuperAdmin(),
   validate(banUserSchema),
   asyncHandler(unbanUserController),
 );

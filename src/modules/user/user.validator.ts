@@ -17,7 +17,7 @@ export const listUsersSchema = z.object({
     page: z.string().regex(/^\d+$/).optional(),
     limit: z.string().regex(/^\d+$/).optional(),
     search: z.string().max(100).optional(),
-    role: z.enum(["USER", "ADMIN"]).optional(),
+    role: z.enum(["USER", "ADMIN", "SUPER_ADMIN"]).optional(),
     isVerified: z.enum(["true", "false"]).optional(),
     isBanned: z.enum(["true", "false"]).optional(),
     sortBy: z.enum(["createdAt", "name", "email"]).optional(),
