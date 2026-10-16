@@ -78,6 +78,15 @@ export const discountService = {
   async listDiscounts(query: ListDiscountsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
+    // [LOGIC] Auto-deactivate expired discounts
+    await prisma.discount.updateMany({
+      where: {
+        active: true,
+        expiresAt: { lt: new Date() },
+      },
+      data: { active: false },
+    });
+
     const where: Prisma.DiscountWhereInput = {};
 
     if (query.active !== undefined) {
