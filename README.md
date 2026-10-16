@@ -59,7 +59,7 @@ The platform is designed for two types of users: **students** who browse, purcha
 ## ✨ Features
 
 - ✅ 🔐 **Authentication & Authorization** — Dual-mode JWT (Bearer token + HttpOnly cookies), email verification, forgot/reset password, change email & password flows
-- ✅ 👤 **User Management** — Profile with avatar upload, admin ban/unban system, role-based access control (`USER` / `ADMIN`)
+- ✅ 👤 **User Management** — Profile with avatar upload, admin ban/unban system, role-based access control (`USER` / `ADMIN` / `SUPER_ADMIN`)
 - ✅ 🎓 **Course Management** — Full CRUD for courses with image upload, slugs, levels, category & teacher associations, publish/unpublish toggle
 - ✅ 🗂️ **Category System** — Hierarchical categories with visibility toggle, linked to both courses and blog posts
 - ✅ 👨‍🏫 **Teacher Profiles** — Create and manage instructor profiles with avatar, bio, and slug
@@ -177,7 +177,7 @@ course-shop-api/
 │   ├── middlewares/
 │   │   ├── authentication.ts           # JWT verification (Bearer + Cookie)
 │   │   ├── authLimiter.ts              # Per-route rate limiters for auth endpoints
-│   │   ├── authorization.ts            # Role-based access control (ADMIN/USER)
+│   │   ├── authorization.ts            # Role-based access control (ADMIN/USER/SUPER_ADMIN)
 │   │   ├── errorHandler.ts             # Global error handler + Telegram alerts
 │   │   ├── logger.ts                   # Winston logger + Telegram error formatter
 │   │   └── validate.ts                 # Zod schema validation middleware
@@ -518,10 +518,11 @@ When the access token expires, call `POST /api/auth/refresh`. The server reads t
 
 ### Role-Based Access Control
 
-| Role    | Permissions                                                                                                 |
-| ------- | ----------------------------------------------------------------------------------------------------------- |
-| `USER`  | Access own profile, enroll in courses, manage cart/orders, post comments, reactions, favorites              |
-| `ADMIN` | All USER permissions + full CRUD on courses, categories, teachers, posts, discounts, user management, stats |
+| Role | Permissions |
+| --- | --- |
+| `USER` | Access own profile, enroll in courses, manage cart/orders, post comments, reactions, favorites |
+| `ADMIN` | Read-only access to admin panel (view dashboard, courses, users, orders, discounts) + comment moderation (approve/reject) |
+| `SUPER_ADMIN` | Full control: All ADMIN permissions + full CRUD on courses, categories, teachers, posts, discounts, user management, wallets & stats |
 
 > 📝 **Note:** Protected routes first check for an `accessToken` cookie, then fall back to the `Authorization: Bearer` header.
 
@@ -585,7 +586,7 @@ The database is powered by PostgreSQL with Prisma ORM. Here's a summary of the c
 
 | Model            | Description                                                                                        |
 | ---------------- | -------------------------------------------------------------------------------------------------- |
-| `User`           | Platform users with roles (`USER`/`ADMIN`), verification, ban status, and reset/change-email flows |
+| `User`           | Platform users with roles (`USER`/`ADMIN`/`SUPER_ADMIN`), verification, ban status, and reset/change-email flows |
 | `Wallet`         | One-to-one with User, stores balance in IRR                                                        |
 | `Transaction`    | Financial record for charges, purchases, and refunds with Zarinpal authority tracking              |
 | `Category`       | Taxonomy for courses and posts, with visibility toggle                                             |
