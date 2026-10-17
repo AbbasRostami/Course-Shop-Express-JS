@@ -28,7 +28,13 @@ const categoriesSchema = z
   .optional()
   .transform((val) => {
     if (!val) return undefined;
-    return Array.isArray(val) ? val : [val];
+    const items = Array.isArray(val) ? val : [val];
+    const cleaned = items
+      .flatMap((item) => item.split(","))
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    return cleaned.length > 0 ? cleaned : undefined;
   });
 
 // [VALID] Create course schema
@@ -133,7 +139,10 @@ export const getCourseBySlugSchema = z.object({
 export const listCoursesPublicSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "course.validation.pageNumber").optional(),
-    limit: z.string().regex(/^\d+$/, "course.validation.limitNumber").optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "course.validation.limitNumber")
+      .optional(),
     categories: categoriesSchema,
     level: courseLevelEnum.optional(),
     minPrice: z
@@ -154,7 +163,10 @@ export const listCoursesPublicSchema = z.object({
 export const listCoursesAdminSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "course.validation.pageNumber").optional(),
-    limit: z.string().regex(/^\d+$/, "course.validation.limitNumber").optional(),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "course.validation.limitNumber")
+      .optional(),
     categories: categoriesSchema,
     level: courseLevelEnum.optional(),
     published: z.enum(["true", "false"]).optional(),
