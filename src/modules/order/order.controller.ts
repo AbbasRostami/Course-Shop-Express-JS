@@ -44,7 +44,7 @@ export const verifyOrderController: RequestHandler = async (req, res) => {
 
   if (result.success) {
     return res.redirect(
-      `${FRONTEND_URL}/orders/success?orderId=${result.orderId}&refId=${result.refId}`,
+      `${FRONTEND_URL}/payment/success?orderId=${result.orderId}&refId=${result.refId}`,
     );
   }
 
@@ -54,7 +54,7 @@ export const verifyOrderController: RequestHandler = async (req, res) => {
   const reason = encodeURIComponent(localizedReason);
 
   return res.redirect(
-    `${FRONTEND_URL}/orders/failed?orderId=${result.orderId}&reason=${reason}`,
+    `${FRONTEND_URL}/payment/failed?orderId=${result.orderId}&reason=${reason}`,
   );
 };
 
