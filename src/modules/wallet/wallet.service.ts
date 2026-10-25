@@ -99,7 +99,7 @@ export const walletService = {
     const zarinpalResult = await requestPayment({
       amount: data.amount,
       description,
-      callbackUrl: `${backendUrl}/api/wallet/verify`,
+      callbackUrl: `${backendUrl}/api/wallet/verify?locale=${locale}`,
       email: user.email,
       mobile: user.phone || undefined,
     });

@@ -297,7 +297,7 @@ export const orderService = {
     const zarinpalResult = await requestPayment({
       amount: order.totalAmount,
       description: paymentDescription,
-      callbackUrl: `${backendUrl}/api/orders/verify`,
+      callbackUrl: `${backendUrl}/api/orders/verify?locale=${locale}`,
       email: user?.email,
       mobile: user?.phone || undefined,
       orderId: order.id,

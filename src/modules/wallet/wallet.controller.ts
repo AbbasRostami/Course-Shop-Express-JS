@@ -42,10 +42,11 @@ export const chargeWalletController: RequestHandler = async (req, res) => {
 export const verifyPaymentController: RequestHandler = async (req, res) => {
   const Authority = req.query.Authority as string;
   const Status = req.query.Status as string;
+  const locale = (req.query.locale as string) === "en" ? "en" : "fa";
 
   if (!Authority || !Status) {
     return res.redirect(
-      `${FRONTEND_URL}/payment/failed?reason=wallet.errors.transactionNotFound`,
+      `${FRONTEND_URL}/${locale}/payment/failed?reason=wallet.errors.transactionNotFound`,
     );
   }
 
@@ -60,16 +61,20 @@ export const verifyPaymentController: RequestHandler = async (req, res) => {
       transactionId: result.transaction.id,
     });
 
-    return res.redirect(`${FRONTEND_URL}/payment/success?${params.toString()}`);
+    return res.redirect(
+      `${FRONTEND_URL}/${locale}/payment/success?${params.toString()}`,
+    );
   }
 
   const params = new URLSearchParams({
     status: "failed",
-    reason: req.t((result.reason || "wallet.errors.paymentFailed") as any),
+    reason: req.t(result.reason || "wallet.errors.paymentFailed"),
     authority: Authority || "",
   });
 
-  return res.redirect(`${FRONTEND_URL}/payment/failed?${params.toString()}`);
+  return res.redirect(
+    `${FRONTEND_URL}/${locale}/payment/failed?${params.toString()}`,
+  );
 };
 
 // [GET] Get user transactions list with localized course relation
