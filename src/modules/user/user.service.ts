@@ -292,6 +292,21 @@ export const userService = {
     if (user.isBanned) {
       throw new AppError("user.errors.alreadyBanned", 422);
     }
+
+    return prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        isBanned: true,
+        bannedAt: new Date(),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isBanned: true,
+        bannedAt: true,
+      },
+    });
   },
 
   // [DB] Admin unban user
