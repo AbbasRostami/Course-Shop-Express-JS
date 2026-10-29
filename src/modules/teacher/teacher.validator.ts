@@ -15,7 +15,11 @@ export const createTeacherSchema = z.object({
       .max(100, "teacher.validation.nameMax"),
     bioFa: z.string().trim().max(2000, "teacher.validation.bioMax").optional(),
     bioEn: z.string().trim().max(2000, "teacher.validation.bioMax").optional(),
-    show: z.boolean().optional().default(true),
+    show: z.preprocess((value) => {
+      if (value === "true") return true;
+      if (value === "false") return false;
+      return value;
+    }, z.boolean().optional().default(true)),
   }),
 });
 
