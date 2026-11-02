@@ -74,7 +74,10 @@ export const categoryService = {
   },
 
   // [DB] Get paginated categories for admin
-  async getAdminCategories(query: ListCategoriesAdminQuery) {
+  async getAdminCategories(
+    query: ListCategoriesAdminQuery,
+    locale: string = "fa",
+  ) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.CategoryWhereInput = {};
@@ -93,12 +96,43 @@ export const categoryService = {
       ];
     }
 
+    // [LOGIC] Dynamic orderBy from sortBy + order
+    const sortOrder = query.order === "asc" ? "asc" : "desc";
+    let orderBy: Prisma.CategoryOrderByWithRelationInput = {
+      createdAt: "desc", // default
+    };
+
+    switch (query.sortBy) {
+      case "name":
+        // bilingual: sort by active locale name
+        orderBy =
+          locale === "en" ? { nameEn: sortOrder } : { nameFa: sortOrder };
+        break;
+      case "show":
+        orderBy = { show: sortOrder };
+        break;
+      case "createdAt":
+        orderBy = { createdAt: sortOrder };
+        break;
+      case "updatedAt":
+        orderBy = { updatedAt: sortOrder };
+        break;
+      case "coursesCount":
+        orderBy = { courses: { _count: sortOrder } };
+        break;
+      case "postsCount":
+        orderBy = { posts: { _count: sortOrder } };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
+
     const [items, total] = await Promise.all([
       prisma.category.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         include: categoryWithCount,
       }),
       prisma.category.count({ where }),

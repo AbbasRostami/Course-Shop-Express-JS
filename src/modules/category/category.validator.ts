@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+// [VALID] Allowed sort fields for admin category list
+export const CATEGORY_SORT_FIELDS = [
+  "name",
+  "show",
+  "createdAt",
+  "updatedAt",
+  "coursesCount",
+  "postsCount",
+] as const;
+
+export type CategorySortField = (typeof CATEGORY_SORT_FIELDS)[number];
+
 // [VALID] Create category schema
 export const createCategorySchema = z.object({
   body: z.object({
@@ -99,6 +111,9 @@ export const listCategoriesAdminSchema = z.object({
       .optional(),
     show: z.enum(["true", "false"]).optional(),
     search: z.string().max(100).optional(),
+    // [VALID] Server-side sorting
+    sortBy: z.enum(CATEGORY_SORT_FIELDS).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 

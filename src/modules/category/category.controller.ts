@@ -39,6 +39,7 @@ export const getAdminCategoriesController: RequestHandler = async (
 ) => {
   const result = await categoryService.getAdminCategories(
     req.query as ListCategoriesAdminQuery,
+    req.locale,
   );
 
   return res.status(200).json({

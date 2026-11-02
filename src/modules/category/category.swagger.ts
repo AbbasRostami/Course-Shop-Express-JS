@@ -137,13 +137,15 @@ export const categorySwagger = {
         tags: ["Category"],
         summary: "Get all categories with pagination (Admin)",
         description:
-          "Returns all categories (including hidden) with pagination, search and filter. Search works on Fa and En columns.",
+          "Returns all categories (including hidden) with pagination, search, filter and sorting. Search works on Fa and En columns. Sorting is applied in the database.",
         security: [{ CookieAuth: [] }, { BearerAuth: [] }],
         parameters: [
           {
             name: "Accept-Language",
             in: "header",
             schema: { type: "string", enum: ["fa", "en"], default: "fa" },
+            description:
+              "Affects localized response fields and name sorting (nameFa vs nameEn).",
           },
           {
             name: "page",
@@ -165,6 +167,33 @@ export const categorySwagger = {
             in: "query",
             schema: { type: "string" },
             description: "Search across name and description (Fa + En)",
+          },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: [
+                "name",
+                "show",
+                "createdAt",
+                "updatedAt",
+                "coursesCount",
+                "postsCount",
+              ],
+            },
+            description:
+              "Sort field. Default: createdAt. Invalid values return 400.",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["asc", "desc"],
+              default: "desc",
+            },
+            description: "Sort direction. Default: desc",
           },
         ],
         responses: {
@@ -196,6 +225,10 @@ export const categorySwagger = {
                 },
               },
             },
+          },
+          400: {
+            description:
+              "Invalid query params (e.g. invalid sortBy/order/page/limit).",
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: { description: "Forbidden: Admin access required." },
