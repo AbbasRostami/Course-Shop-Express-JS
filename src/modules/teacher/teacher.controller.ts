@@ -115,6 +115,7 @@ export const getTeachersController: RequestHandler = async (req, res) => {
 export const getAdminTeachersController: RequestHandler = async (req, res) => {
   const result = await teacherService.getAdminTeachers(
     req.query as ListTeachersAdminQuery,
+    req.locale,
   );
 
   return res.status(200).json({

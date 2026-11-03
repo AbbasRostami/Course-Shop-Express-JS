@@ -234,8 +234,11 @@ export const teacherService = {
     };
   },
 
-  // [DB] Admin: Get all teachers (including hidden) with filters
-  async getAdminTeachers(query: ListTeachersAdminQuery) {
+  // [DB] Admin: Get all teachers (including hidden) with filters + sorting
+  async getAdminTeachers(
+    query: ListTeachersAdminQuery,
+    locale: "fa" | "en" = "fa",
+  ) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.TeacherWhereInput = {};
@@ -253,12 +256,34 @@ export const teacherService = {
       ];
     }
 
+    // [SORT] Dynamic orderBy from validated sortBy/order
+    const sortBy = query.sortBy;
+    const order = query.order === "asc" ? "asc" : "desc";
+
+    let orderBy: Prisma.TeacherOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case "name":
+        orderBy = locale === "en" ? { nameEn: order } : { nameFa: order };
+        break;
+      case "coursesCount":
+        orderBy = { courses: { _count: order } };
+        break;
+      case "show":
+      case "createdAt":
+      case "updatedAt":
+        orderBy = { [sortBy]: order };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
+
     const [items, total] = await Promise.all([
       prisma.teacher.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         select: {
           ...teacherSelect,
           _count: { select: { courses: true } },

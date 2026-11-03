@@ -166,6 +166,25 @@ export const teacherSwagger = {
             schema: { type: "string" },
             description: "Search across name and bio (Fa + En)",
           },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["name", "show", "createdAt", "updatedAt", "coursesCount"],
+            },
+            description: "Field to sort by",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["asc", "desc"],
+              default: "desc",
+            },
+            description: "Sort direction",
+          },
         ],
         responses: {
           200: {

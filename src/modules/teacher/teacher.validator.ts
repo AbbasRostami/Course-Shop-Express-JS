@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const TEACHER_SORT_FIELDS = [
+  "name",
+  "show",
+  "createdAt",
+  "updatedAt",
+  "coursesCount",
+] as const;
+
 // [VALID] Create teacher schema
 export const createTeacherSchema = z.object({
   body: z.object({
@@ -92,6 +100,8 @@ export const listTeachersAdminSchema = z.object({
       .optional(),
     show: z.enum(["true", "false"]).optional(),
     search: z.string().max(100).optional(),
+    sortBy: z.enum(TEACHER_SORT_FIELDS).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 
