@@ -231,7 +231,7 @@ export const postService = {
   },
 
   // [DB] Admin get all posts with filters
-  async getAdminPosts(query: ListPostsAdminQuery) {
+  async getAdminPosts(query: ListPostsAdminQuery, locale: "fa" | "en" = "fa") {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.PostWhereInput = {};
@@ -249,9 +249,27 @@ export const postService = {
       ];
     }
 
-    const sortBy = query.sortBy || "createdAt";
-    const order = query.order || "desc";
-    const orderBy = { [sortBy]: order };
+    // [SORT] Dynamic orderBy from validated sortBy/order
+    const sortBy = query.sortBy;
+    const order = query.order === "asc" ? "asc" : "desc";
+
+    let orderBy: Prisma.PostOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case "title":
+        orderBy = locale === "en" ? { titleEn: order } : { titleFa: order };
+        break;
+      case "commentsCount":
+        orderBy = { comments: { _count: order } };
+        break;
+      case "published":
+      case "createdAt":
+      case "updatedAt":
+        orderBy = { [sortBy]: order };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
 
     const [items, total] = await Promise.all([
       prisma.post.findMany({

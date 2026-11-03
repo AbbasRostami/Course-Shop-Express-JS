@@ -204,8 +204,19 @@ export const postSwagger = {
             in: "query",
             schema: {
               type: "string",
-              enum: ["createdAt", "titleFa", "titleEn"],
+              enum: [
+                "title",
+                "published",
+                "createdAt",
+                "updatedAt",
+                "commentsCount",
+              ],
             },
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: { type: "string", enum: ["asc", "desc"] },
           },
           {
             name: "order",

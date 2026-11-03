@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const POST_ADMIN_SORT_FIELDS = [
+  "title",
+  "published",
+  "createdAt",
+  "updatedAt",
+  "commentsCount",
+] as const;
+
 // [UTIL] Strip HTML tags and measure real text length
 const getPlainTextLength = (html: string) =>
   html
@@ -131,13 +139,14 @@ export const listPostsPublicSchema = z.object({
 });
 
 // [VALID] Admin list posts schema
+
 export const listPostsAdminSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "post.validation.pageNumber").optional(),
     limit: z.string().regex(/^\d+$/, "post.validation.limitNumber").optional(),
     published: z.enum(["true", "false"]).optional(),
     search: z.string().trim().max(100).optional(),
-    sortBy: z.enum(["createdAt", "titleFa", "titleEn"]).optional(),
+    sortBy: z.enum(POST_ADMIN_SORT_FIELDS).optional(),
     order: z.enum(["asc", "desc"]).optional(),
   }),
 });
