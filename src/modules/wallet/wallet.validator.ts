@@ -24,6 +24,14 @@ export const listUserTransactionsSchema = z.object({
   }),
 });
 
+export const WALLETS_ADMIN_SORT_FIELDS = [
+  "user",
+  "email",
+  "balance",
+  "updatedAt",
+  "createdAt",
+] as const;
+
 // [VALID] Admin list wallets schema
 export const listWalletsAdminSchema = z.object({
   query: z.object({
@@ -41,8 +49,18 @@ export const listWalletsAdminSchema = z.object({
       .regex(/^\d+$/, "wallet.validation.maxBalanceNumber")
       .optional(),
     search: z.string().max(100, "wallet.validation.searchMax").optional(),
+    sortBy: z.enum(WALLETS_ADMIN_SORT_FIELDS).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
+
+export const TRANSACTIONS_ADMIN_SORT_FIELDS = [
+  "user",
+  "amount",
+  "type",
+  "status",
+  "createdAt",
+] as const;
 
 // [VALID] Admin list transactions schema
 export const listAdminTransactionsSchema = z.object({
@@ -60,6 +78,8 @@ export const listAdminTransactionsSchema = z.object({
       .datetime("wallet.validation.startDateInvalid")
       .optional(),
     endDate: z.string().datetime("wallet.validation.endDateInvalid").optional(),
+    sortBy: z.enum(TRANSACTIONS_ADMIN_SORT_FIELDS).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 

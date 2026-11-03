@@ -516,7 +516,7 @@ export const orderService = {
     return cancelled;
   },
 
-  // [DB] Admin get all orders with filters
+  // [DB] Admin get all orders with filters + sorting
   async getAdminOrders(query: ListAdminOrdersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -534,12 +534,33 @@ export const orderService = {
       };
     }
 
+    // [SORT] Dynamic orderBy from validated sortBy/order
+    const sortBy = query.sortBy;
+    const order = query.order === "asc" ? "asc" : "desc";
+
+    let orderBy: Prisma.OrderOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case "user":
+        orderBy = { user: { name: order } };
+        break;
+      case "id":
+      case "totalAmount":
+      case "status":
+      case "createdAt":
+      case "updatedAt":
+        orderBy = { [sortBy]: order };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
+
     const [items, total] = await Promise.all([
       prisma.order.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         include: orderAdminInclude,
       }),
       prisma.order.count({ where }),

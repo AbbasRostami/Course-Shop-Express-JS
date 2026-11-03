@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const COMMENT_ADMIN_SORT_FIELDS = [
+  "createdAt",
+  "updatedAt",
+  "status",
+  "repliesCount",
+  "reactionsCount",
+] as const;
+
 // [VALID] Create comment schema
 export const createCommentSchema = z.object({
   body: z
@@ -98,6 +106,8 @@ export const listAdminCommentsSchema = z.object({
       .trim()
       .max(100, "comment.validation.searchMax")
       .optional(),
+    sortBy: z.enum(COMMENT_ADMIN_SORT_FIELDS).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 

@@ -31,7 +31,6 @@ export const createDiscountSchema = z
   })
   .refine(
     (data) => {
-      // [LOGIC] Validate value range based on type
       if (data.body.type === "PERCENTAGE") {
         return data.body.value >= 1 && data.body.value <= 100;
       }
@@ -43,7 +42,7 @@ export const createDiscountSchema = z
     },
   );
 
-// [VALID] List discounts schema
+// [VALID] List discounts schema with Server-Side Sorting
 export const listDiscountsSchema = z.object({
   query: z.object({
     page: z
@@ -56,24 +55,35 @@ export const listDiscountsSchema = z.object({
       .optional(),
     active: z.enum(["true", "false"]).optional(),
     search: z.string().max(100).optional(),
+    sortBy: z
+      .enum([
+        "code",
+        "type",
+        "value",
+        "usedCount",
+        "maxUses",
+        "expiresAt",
+        "active",
+        "createdAt",
+        "updatedAt",
+      ])
+      .optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 
-// [VALID] Toggle discount schema
 export const toggleDiscountSchema = z.object({
   params: z.object({
     id: z.string().uuid("discount.validation.idInvalid"),
   }),
 });
 
-// [VALID] Delete discount schema
 export const deleteDiscountSchema = z.object({
   params: z.object({
     id: z.string().uuid("discount.validation.idInvalid"),
   }),
 });
 
-// [VALID] Apply discount schema
 export const applyDiscountSchema = z.object({
   body: z.object({
     code: z

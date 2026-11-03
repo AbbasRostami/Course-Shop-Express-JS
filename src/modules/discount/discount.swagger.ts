@@ -147,6 +147,31 @@ export const discountSwagger = {
             schema: { type: "string", maxLength: 100 },
             description: "Search in discount codes (case-insensitive)",
           },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: [
+                "code",
+                "type",
+                "value",
+                "usedCount",
+                "maxUses",
+                "expiresAt",
+                "active",
+                "createdAt",
+                "updatedAt",
+              ],
+            },
+            description: "Field to sort by",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: { type: "string", enum: ["asc", "desc"] },
+            description: "Sort order (asc or desc)",
+          },
         ],
         responses: {
           200: {

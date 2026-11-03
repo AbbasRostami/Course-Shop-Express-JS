@@ -254,6 +254,32 @@ export const orderSwagger = {
             in: "query",
             schema: { type: "string", maxLength: 100 },
           },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: [
+                "id",
+                "user",
+                "totalAmount",
+                "status",
+                "createdAt",
+                "updatedAt",
+              ],
+            },
+            description: "Field to sort by",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["asc", "desc"],
+              default: "desc",
+            },
+            description: "Sort direction",
+          },
         ],
         responses: {
           200: {

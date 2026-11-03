@@ -101,8 +101,16 @@ export const commentSwagger = {
             required: true,
             schema: { type: "string", example: "react-advanced" },
           },
-          { name: "page", in: "query", schema: { type: "string", example: "1" } },
-          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "10" },
+          },
         ],
         responses: {
           200: {
@@ -178,8 +186,16 @@ export const commentSwagger = {
             required: true,
             schema: { type: "string", example: "react-vs-vue" },
           },
-          { name: "page", in: "query", schema: { type: "string", example: "1" } },
-          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "10" },
+          },
         ],
         responses: {
           200: {
@@ -232,8 +248,16 @@ export const commentSwagger = {
             in: "header",
             schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          { name: "page", in: "query", schema: { type: "string", example: "1" } },
-          { name: "limit", in: "query", schema: { type: "string", example: "10" } },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "10" },
+          },
           {
             name: "status",
             in: "query",
@@ -296,8 +320,16 @@ export const commentSwagger = {
             in: "header",
             schema: { type: "string", enum: ["fa", "en"], default: "fa" },
           },
-          { name: "page", in: "query", schema: { type: "string", example: "1" } },
-          { name: "limit", in: "query", schema: { type: "string", example: "20" } },
+          {
+            name: "page",
+            in: "query",
+            schema: { type: "string", example: "1" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            schema: { type: "string", example: "20" },
+          },
           {
             name: "status",
             in: "query",
@@ -311,6 +343,31 @@ export const commentSwagger = {
             in: "query",
             schema: { type: "string" },
             description: "Search in comment content",
+          },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: [
+                "createdAt",
+                "updatedAt",
+                "status",
+                "repliesCount",
+                "reactionsCount",
+              ],
+            },
+            description: "Field to sort by",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["asc", "desc"],
+              default: "desc",
+            },
+            description: "Sort direction",
           },
         ],
         responses: {
@@ -468,7 +525,8 @@ export const commentSwagger = {
           },
           401: { description: "Unauthorized: Invalid or expired token." },
           403: {
-            description: "Permission denied: Only the comment owner or admin can delete.",
+            description:
+              "Permission denied: Only the comment owner or admin can delete.",
             content: {
               "application/json": {
                 example: {

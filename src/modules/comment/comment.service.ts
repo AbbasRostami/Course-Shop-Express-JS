@@ -349,7 +349,7 @@ export const commentService = {
     };
   },
 
-  // [DB] Admin get all comments with filters
+  // [DB] Admin get all comments with filters + sorting
   async getAdminComments(query: ListAdminCommentsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -366,12 +366,34 @@ export const commentService = {
       };
     }
 
+    // [SORT] Dynamic orderBy from validated sortBy/order
+    const sortBy = query.sortBy;
+    const order = query.order === "asc" ? "asc" : "desc";
+
+    let orderBy: Prisma.CommentOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case "repliesCount":
+        orderBy = { replies: { _count: order } };
+        break;
+      case "reactionsCount":
+        orderBy = { reactions: { _count: order } };
+        break;
+      case "status":
+      case "createdAt":
+      case "updatedAt":
+        orderBy = { [sortBy]: order };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
+
     const [items, total] = await Promise.all([
       prisma.comment.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         include: commentAdminInclude,
       }),
       prisma.comment.count({ where }),

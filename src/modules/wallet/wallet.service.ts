@@ -261,20 +261,18 @@ export const walletService = {
     };
   },
 
-  // [DB] Admin get all wallets with filters
+  // [DB] Admin get all wallets with filters + sorting
   async getAllWallets(query: ListWalletsAdminQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
     const where: Prisma.WalletWhereInput = {};
 
-    // [LOGIC] Balance range filter
     if (query.minBalance || query.maxBalance) {
       where.balance = {};
       if (query.minBalance) where.balance.gte = Number(query.minBalance);
       if (query.maxBalance) where.balance.lte = Number(query.maxBalance);
     }
 
-    // [LOGIC] Search by user email or name
     if (query.search) {
       where.user = {
         OR: [
@@ -284,12 +282,34 @@ export const walletService = {
       };
     }
 
+    // [SORT] Dynamic orderBy from validated sortBy/order
+    const sortBy = query.sortBy;
+    const order = query.order === "asc" ? "asc" : "desc";
+
+    let orderBy: Prisma.WalletOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case "user":
+        orderBy = { user: { name: order } };
+        break;
+      case "email":
+        orderBy = { user: { email: order } };
+        break;
+      case "balance":
+      case "updatedAt":
+      case "createdAt":
+        orderBy = { [sortBy]: order };
+        break;
+      default:
+        orderBy = { balance: "desc" };
+    }
+
     const [items, total] = await Promise.all([
       prisma.wallet.findMany({
         where,
         skip,
         take,
-        orderBy: { balance: "desc" },
+        orderBy,
         include: walletWithUser,
       }),
       prisma.wallet.count({ where }),
@@ -301,7 +321,7 @@ export const walletService = {
     };
   },
 
-  // [DB] Admin get all transactions with filters
+  // [DB] Admin get all transactions with filters + sorting
   async getAllTransactions(query: ListAdminTransactionsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -310,11 +330,30 @@ export const walletService = {
     if (query.status) where.status = query.status;
     if (query.type) where.type = query.type;
 
-    // [LOGIC] Date range filter
     if (query.startDate || query.endDate) {
       where.createdAt = {};
       if (query.startDate) where.createdAt.gte = new Date(query.startDate);
       if (query.endDate) where.createdAt.lte = new Date(query.endDate);
+    }
+
+    // [SORT] Dynamic orderBy from validated sortBy/order
+    const sortBy = query.sortBy;
+    const order = query.order === "asc" ? "asc" : "desc";
+
+    let orderBy: Prisma.TransactionOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case "user":
+        orderBy = { user: { name: order } };
+        break;
+      case "amount":
+      case "type":
+      case "status":
+      case "createdAt":
+        orderBy = { [sortBy]: order };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
     }
 
     const [items, total] = await Promise.all([
@@ -322,7 +361,7 @@ export const walletService = {
         where,
         skip,
         take,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         include: transactionWithUser,
       }),
       prisma.transaction.count({ where }),

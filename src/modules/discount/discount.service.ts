@@ -74,7 +74,7 @@ export const discountService = {
     });
   },
 
-  // [DB] List discounts with filters and pagination
+  // [DB] List discounts with filters, sorting and pagination
   async listDiscounts(query: ListDiscountsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
 
@@ -97,12 +97,20 @@ export const discountService = {
       where.code = { contains: query.search, mode: "insensitive" };
     }
 
+    // Dynamic Prisma OrderBy
+    const orderBy: Prisma.DiscountOrderByWithRelationInput = {};
+    if (query.sortBy) {
+      orderBy[query.sortBy] = query.order ?? "asc";
+    } else {
+      orderBy.createdAt = "desc";
+    }
+
     const [items, total] = await Promise.all([
       prisma.discount.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: "desc" },
+        orderBy,
       }),
       prisma.discount.count({ where }),
     ]);

@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const ORDER_ADMIN_SORT_FIELDS = [
+  "id",
+  "user",
+  "totalAmount",
+  "status",
+  "createdAt",
+  "updatedAt",
+] as const;
+
 // [VALID] Checkout schema
 export const checkoutSchema = z.object({
   body: z.object({
@@ -40,12 +49,16 @@ export const getAdminOrderSchema = z.object({
 });
 
 // [VALID] Admin list orders schema
+
+// [VALID] Admin list orders schema
 export const listAdminOrdersSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/, "order.validation.pageNumber").optional(),
     limit: z.string().regex(/^\d+$/, "order.validation.limitNumber").optional(),
     status: z.enum(["PENDING", "PAID", "CANCELLED"]).optional(),
     search: z.string().trim().max(100).optional(),
+    sortBy: z.enum(ORDER_ADMIN_SORT_FIELDS).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
   }),
 });
 

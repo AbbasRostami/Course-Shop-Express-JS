@@ -267,6 +267,20 @@ Creates a PENDING transaction and returns ZarinPal payment URL.
             in: "query",
             schema: { type: "string" },
           },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["user", "email", "balance", "updatedAt", "createdAt"],
+            },
+            description: "Field to sort by",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: { type: "string", enum: ["asc", "desc"], default: "desc" },
+          },
         ],
         responses: {
           200: {
@@ -369,6 +383,20 @@ Creates a PENDING transaction and returns ZarinPal payment URL.
             name: "endDate",
             in: "query",
             schema: { type: "string", format: "date-time" },
+          },
+          {
+            name: "sortBy",
+            in: "query",
+            schema: {
+              type: "string",
+              enum: ["user", "amount", "type", "status", "createdAt"],
+            },
+            description: "Field to sort by",
+          },
+          {
+            name: "order",
+            in: "query",
+            schema: { type: "string", enum: ["asc", "desc"], default: "desc" },
           },
         ],
         responses: {
